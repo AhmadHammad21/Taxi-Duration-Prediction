@@ -14,13 +14,13 @@ class DataDownloader:
 
     def generate_month_range(self, start: str, end: str):
 
-        # If start and end are the same, return just that month
-        if start_date == end_date:
-            return [start]
-
         start_date = datetime.strptime(start, "%Y-%m")
         end_date = datetime.strptime(end, "%Y-%m")
 
+        # If start and end are the same, return just that month
+        if start_date == end_date:
+            return [start]
+        
         months = []
         current = start_date
         while current <= end_date:

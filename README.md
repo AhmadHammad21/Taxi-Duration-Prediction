@@ -64,6 +64,11 @@ cd deployment
 docker-compose up -d
 ```
 
+### Run the FastAPI Server
+```bash
+uvicorn src.app:app --reload --host 0.0.0.0 --port 8000
+```
+
 ## Project Structure
 Brief explanation of the repository organization.
 ```
@@ -85,8 +90,8 @@ llm-twin-course/
 ## To-do List:
 - ✅ Structure the project and modules
 - ✅ Script to download data
-- [ ] Preprocessing / feature engineering
-- [ ] MLflow / CometML
+- ✅ Preprocessing & feature engineering
+- [ ] MLflow, Artifacts, Model Registry
 - [ ] Add Workflow (CI/CD)
 - [ ] Docker / Docker Compose
 - [ ] Monitoring
