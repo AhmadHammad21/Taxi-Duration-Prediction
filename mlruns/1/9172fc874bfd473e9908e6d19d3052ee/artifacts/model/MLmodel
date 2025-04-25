@@ -1,0 +1,26 @@
+artifact_path: model
+flavors:
+  lightgbm:
+    code: null
+    data: model.pkl
+    lgb_version: 4.6.0
+    model_class: lightgbm.sklearn.LGBMRegressor
+  python_function:
+    data: model.pkl
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.lightgbm
+    python_version: 3.12.9
+is_signature_from_type_hint: false
+mlflow_version: 2.22.0
+model_size_bytes: 765381
+model_uuid: c26b0c8ec88d4520a901a7ae77e9d3ea
+prompts: null
+run_id: 9172fc874bfd473e9908e6d19d3052ee
+signature:
+  inputs: '[{"type": "tensor", "tensor-spec": {"dtype": "float64", "shape": [-1, 23565]}}]'
+  outputs: '[{"type": "tensor", "tensor-spec": {"dtype": "float64", "shape": [-1]}}]'
+  params: null
+type_hint_from_example: false
+utc_time_created: '2025-04-25 20:20:49.849826'
