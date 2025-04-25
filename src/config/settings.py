@@ -13,12 +13,12 @@ class AppSettings:
 
     TRAINING_DATA_DATE: dict = field(default_factory=lambda: {
         "start": "2024-01",
-        "end": "2024-02" # Inclusive
+        "end": "2024-01" # Inclusive
     })
 
     TESTING_DATA_DATE: dict = field(default_factory=lambda: {
-        "start": "2024-03",
-        "end": "2024-03" # Inclusive
+        "start": "2024-02",
+        "end": "2024-02" # Inclusive
     })
 
     # # ================================ LLM Settings ================================
