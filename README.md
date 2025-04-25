@@ -42,20 +42,15 @@ uv sync
 
 ## Usage
 
-### Data Preparation
+### Run the MLFlow Server
+To track machine learning experiments.
 ```bash
-python src/data_download.py
-python src/preprocess.py
+mlflow ui --backend-store-uri sqlite:///mlflow.db
 ```
 
-### Model Training
+### Run Data, Feature, Training Pipeline
 ```bash
-python src/train_model.py
-```
-
-### Model Evaluation
-```bash
-python src/evaluate_model.py
+python src/main.py
 ```
 
 ### API Service
@@ -72,7 +67,7 @@ uvicorn src.app:app --reload --host 0.0.0.0 --port 8000
 ## Project Structure
 Brief explanation of the repository organization.
 ```
-llm-twin-course/
+taxi-duration-prediction/
 ├── src/                     # Source code for all the ML pipelines and services
 │ ├── artifacts/             # Models Artifacts
 │ ├── config/                # Configurations
@@ -91,7 +86,9 @@ llm-twin-course/
 - ✅ Structure the project and modules
 - ✅ Script to download data
 - ✅ Preprocessing & feature engineering
-- [ ] MLflow, Artifacts, Model Registry
+- ✅ MLflow, Artifacts, Model Registry, Training Pipeline
+- [ ] Inference Pipeline
+- [ ] FastAPI API
 - [ ] Add Workflow (CI/CD)
 - [ ] Docker / Docker Compose
 - [ ] Monitoring

@@ -29,9 +29,14 @@ class DataDownloader:
         return months
 
     def download_and_save_parquet_file(self, url: str, output_dir: Path):
-        df = pd.read_parquet(url)
         filename = url.split("/")[-1]
         output_path = output_dir / filename
+
+        if output_path.exists():
+            print(f"⚠️ File already exists: {output_path}, skipping download.")
+            return
+
+        df = pd.read_parquet(url)
         df.to_parquet(output_path)
         print(f"✅ Saved data to {output_path}")
 
