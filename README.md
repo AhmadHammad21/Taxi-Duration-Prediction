@@ -101,7 +101,7 @@ Brief explanation of what problem this project solves and why it's important.
 
 ## Data
 Description of the data used, including sources and key characteristics.
-
+Data from (TLC Trip Record)[https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page]
 ## Model
 Overview of the modeling approach and key algorithms used.
 
@@ -111,7 +111,7 @@ Summary of model performance and key findings.
 ## Setup and Installation
 
 ### Prerequisites
-- Python 3.8+
+- Python 3.12+
 - Other dependencies
 
 ### Installation
@@ -120,34 +120,36 @@ Summary of model performance and key findings.
 git clone https://github.com/username/project.git
 cd project
 
+# macos and linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# windows
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+
 # Create and activate virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+uv init
 
-or via conda
-conda create --name taxi_prediction python=3.12
-conda activate taxi_prediction
+# syncing the packages to your environment
+uv sync
 
-# Install dependencies
-pip install -r requirements.txt
 ```
 
 ## Usage
 
 ### Data Preparation
 ```bash
-python scripts/data_download.py
-python scripts/preprocess.py
+python src/data_download.py
+python src/preprocess.py
 ```
 
 ### Model Training
 ```bash
-python scripts/train_model.py
+python src/train_model.py
 ```
 
 ### Model Evaluation
 ```bash
-python scripts/evaluate_model.py
+python src/evaluate_model.py
 ```
 
 ### API Service
@@ -167,15 +169,16 @@ This project is licensed under the [LICENSE NAME] - see the LICENSE file for det
 
 
 ## To do later:
-- Script to download data
-- preprocessing
-- MlFlow
+- Script to download data (done)
+- preprocessing / feature enginerring 
+- MlFlow / CometML
 - Add Workflow
 - Docker
 - Monitoring
 -  / Docker Compose
+- Grafana / Prometheus
 - Add Kubernetes
 
 
 ## Time taken to build this project
-- 4 Hours
+- 6 Hours
