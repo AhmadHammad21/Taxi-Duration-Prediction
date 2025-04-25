@@ -1,97 +1,3 @@
-# ML-Project-Structure
-A comprehensive template for machine learning projects
-
-## Project Structure
-```
-ml-project/
-│
-├── .github/                    # GitHub specific files
-│   ├── workflows/              # GitHub Actions workflows
-│   │   └── ci.yml              # Continuous Integration workflow
-│
-├── .gitignore                  # Files to ignore in git
-├── LICENSE                     # Project license
-├── README.md                   # Project overview and instructions
-├── requirements.txt            # Python dependencies
-├── setup.py                    # Package installation script
-│
-├── config/                     # Configuration files
-│   ├── config.yaml             # Main configuration
-│
-├── data/                       # Data directory (often gitignored)
-│   ├── raw/                    # Raw, immutable data
-│   ├── processed/              # Cleaned and processed data
-│
-├── docs/                       # Documentation
-│   ├── data_dictionary.md      # Data field descriptions
-│   ├── model_architecture.md   # Model design documentation
-│   └── experiment_tracking.md  # Experiment results and notes
-│
-├── logs/                       # Log files
-│   └── training_logs/          # Model training logs
-│
-├── models/                     # Saved model files
-│   ├── trained/                # Trained model artifacts
-│   └── pretrained/             # Pre-trained models
-│
-├── notebooks/                  # Jupyter notebooks
-│   ├── 01-data-exploration.ipynb     # Initial data exploration
-│   ├── 02-feature-engineering.ipynb  # Feature development
-│   ├── 03-model-training.ipynb       # Model training experiments
-│   └── 04-model-evaluation.ipynb     # Model evaluation
-│
-├── src/                        # Source code
-│   ├── __init__.py             # Make src a Python package
-│   │
-│   ├── data/                   # Data processing code
-│   │   ├── __init__.py
-│   │   ├── make_dataset.py     # Data acquisition and generation
-│   │   ├── preprocess.py       # Data cleaning and transformation
-│   │   └── validation.py       # Data validation utilities
-│   │
-│   ├── features/               # Feature engineering code
-│   │   ├── __init__.py
-│   │   ├── build_features.py   # Feature creation
-│   │   └── transformers.py     # Custom feature transformers
-│   │
-│   ├── models/                 # Model code
-│   │   ├── __init__.py
-│   │   ├── train_model.py      # Model training functionality
-│   │   ├── predict_model.py    # Model prediction functionality
-│   │   ├── evaluate_model.py   # Model evaluation metrics
-│   │   └── model_registry.py   # Model versioning & registry
-│   │
-│   └── utils/                  # Utility functions
-│       ├── __init__.py
-│       ├── logger.py           # Logging configuration
-│       ├── config_parser.py    # Configuration parser
-│       └── io_utils.py         # I/O utilities
-│
-├── tests/                      # Test suite
-│   ├── __init__.py
-│   ├── conftest.py             # Test configuration
-│   ├── test_data.py            # Data tests
-│   ├── test_features.py        # Feature tests
-│   └── test_models.py          # Model tests
-│
-├── mlflow/                     # MLflow experiment tracking
-│   └── mlruns/                 # MLflow run data
-│
-└── deployment/                 # Deployment configuration
-    ├── Dockerfile              # Docker container definition
-    ├── docker-compose.yml      # Docker service configuration
-    ├── api/                    # API code
-    │   ├── app.py              # FastAPI application
-    │   └── routes/             # API endpoints
-    └── monitoring/             # Monitoring configuration
-        ├── prometheus.yml      # Prometheus configuration
-        └── grafana/            # Grafana dashboards
-```
-
-## Key Files
-
-### README.md
-```markdown
 # Taxi Fare Prediction
 
 Short description of the project.
@@ -101,7 +7,8 @@ Brief explanation of what problem this project solves and why it's important.
 
 ## Data
 Description of the data used, including sources and key characteristics.
-Data from (TLC Trip Record)[https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page]
+Data from [TLC Trip Record](https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page)
+
 ## Model
 Overview of the modeling approach and key algorithms used.
 
@@ -110,28 +17,27 @@ Summary of model performance and key findings.
 
 ## Setup and Installation
 
-### Prerequisites
-- Python 3.12+
-- Other dependencies
-
 ### Installation
+
+### Clone the Repository
 ```bash
-# Clone repository
-git clone https://github.com/username/project.git
-cd project
+git clone https://github.com/AhmadHammad21/Taxi-Duration-Prediction.git
+cd Taxi-Duration-Prediction
+```
 
-# macos and linux
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
+### Install UV Package Manager
+```bash
 # windows
 powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+
+# macOS and Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Create and activate virtual environment
 uv init
 
-# syncing the packages to your environment
+# Syncing the dependencies to your environment
 uv sync
-
 ```
 
 ## Usage
@@ -160,25 +66,43 @@ docker-compose up -d
 
 ## Project Structure
 Brief explanation of the repository organization.
+```
+llm-twin-course/
+├── src/                     # Source code for all the ML pipelines and services
+│ ├── artifacts/             # Models Artifacts
+│ ├── config/                # Configurations
+│ ├── data_pulling/          # Data download & collection code
+│ ├── features/               # Feature engineering pipeline code
+│ ├── inference/             # Inference pipeline code
+│ ├── training/              # Training service code
+│ └── routes/                # API's routes
+│ └── schemas/               # Schemas for validation
+│ └── utils/                 # Utilities functions and helpers
+├── .env.example             # Example environment variables template
+├── pyproject.toml           # Project dependencies
+```
 
-## Contributing
-Instructions for how to contribute to the project.
-
-## License
-This project is licensed under the [LICENSE NAME] - see the LICENSE file for details.
-
-
-## To do later:
-- Script to download data (done)
-- preprocessing / feature enginerring 
-- MlFlow / CometML
-- Add Workflow
-- Docker
-- Monitoring
--  / Docker Compose
-- Grafana / Prometheus
-- Add Kubernetes
+## To-do List:
+- ✅ Structure the project and modules
+- ✅ Script to download data
+- [ ] Preprocessing / feature engineering
+- [ ] MLflow / CometML
+- [ ] Add Workflow (CI/CD)
+- [ ] Docker / Docker Compose
+- [ ] Monitoring
+- [ ] Add Tests
+- [ ] Grafana / Prometheus
+- [ ] Add Kubernetes
+- [ ] Add diagram of project flow
+- [ ] Move the data to the cloud
 
 
 ## Time taken to build this project
 - 6 Hours
+
+## Contributing
+Anyone can contribute
+
+## License
+I don't own the data for the NYC, I'm using it for educational purposes.  
+This project is licensed under the MIT License - see the LICENSE file for details.
