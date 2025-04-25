@@ -27,7 +27,7 @@ cd Taxi-Duration-Prediction
 
 ### Install UV Package Manager
 ```bash
-# windows
+# Windows
 powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
 
 # macOS and Linux
