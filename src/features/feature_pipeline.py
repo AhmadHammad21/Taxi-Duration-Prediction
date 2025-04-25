@@ -2,6 +2,7 @@ import pandas as pd
 import logging
 from typing import List, Optional
 from sklearn.feature_extraction import DictVectorizer
+import joblib
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -26,12 +27,14 @@ class FeatureEngineer:
         numerical: List[str] = None,
         categorical: List[str] = None,
         target: str = DURATION,
+        dv_path: str = "src/artifacts/dict_vectorizer.pkl",  # Path to save the DictVectorizer
     ):
         self.numerical = numerical or ["trip_distance"]
         self.categorical = categorical or [self.PU_DO]
         self.target = target
         self.cols = self.numerical + self.categorical + [self.target]
         self.dv: Optional[DictVectorizer] = None
+        self.dv_path = dv_path
 
     def _clean_and_engineer(self, df: pd.DataFrame) -> pd.DataFrame:
         df = df.copy()
@@ -69,15 +72,45 @@ class FeatureEngineer:
         X = self.dv.fit_transform(features)
         y = df[self.target].values
         logger.info("Training data transformation complete.")
+
+        # Save the DictVectorizer after fitting
+        joblib.dump(self.dv, self.dv_path)
+        logger.info(f"DictVectorizer saved to {self.dv_path}")
+
         return X, y
 
     def transform(self, df: pd.DataFrame):
         logger.info("Transforming new data...")
         if not self.dv:
-            raise ValueError("DictVectorizer not fitted. Run fit_transform first.")
+            # Load the saved DictVectorizer if not already loaded
+            try:
+                self.dv = joblib.load(self.dv_path)
+                logger.info(f"DictVectorizer loaded from {self.dv_path}")
+            except FileNotFoundError:
+                raise ValueError(f"DictVectorizer not found. Please run fit_transform first.")
+        
         df = self._clean_and_engineer(df)
         features = df[self.categorical + self.numerical].to_dict(orient="records")
         X = self.dv.transform(features)
         y = df[self.target].values
         logger.info("Data transformation complete.")
         return X, y
+
+    def inference(self, df: pd.DataFrame):
+        logger.info("Transforming new data for inference...")
+        if not self.dv:
+            # Load the saved DictVectorizer if not already loaded
+            try:
+                self.dv = joblib.load(self.dv_path)
+                logger.info(f"DictVectorizer loaded from {self.dv_path}")
+            except FileNotFoundError:
+                raise ValueError(f"DictVectorizer not found. Please run fit_transform first.")
+        
+        df[self.PU] = df[self.PU].astype(str)
+        df[self.DO] = df[self.DO].astype(str)
+        df[self.PU_DO] = df[self.PU] + "_" + df[self.DO]
+        features = df[self.categorical + self.numerical].to_dict(orient="records")
+
+        X = self.dv.transform(features)
+        logger.info("Data transformation complete.")
+        return X
