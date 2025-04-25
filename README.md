@@ -87,12 +87,14 @@ taxi-duration-prediction/
 - ✅ Script to download data
 - ✅ Preprocessing & feature engineering
 - ✅ MLflow, Artifacts, Model Registry, Training Pipeline
-- [ ] Inference Pipeline
+- ✅ Inference Pipeline
 - [ ] FastAPI API
+- [ ] Add Tests
+- [ ] Double Check each module and ensure best practices
+- [ ] Modify Settings
 - [ ] Add Workflow (CI/CD)
 - [ ] Docker / Docker Compose
 - [ ] Monitoring
-- [ ] Add Tests
 - [ ] Grafana / Prometheus
 - [ ] Add Kubernetes
 - [ ] Add diagram of project flow
@@ -100,10 +102,10 @@ taxi-duration-prediction/
 
 
 ## Time taken to build this project
-- 6 Hours
+- 11 Hours
 
 ## Contributing
-Anyone can contribute
+Anyone can contribute.
 
 ## License
 I don't own the data for the NYC, I'm using it for educational purposes.  
