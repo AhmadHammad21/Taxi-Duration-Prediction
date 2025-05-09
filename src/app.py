@@ -1,17 +1,18 @@
 from fastapi import FastAPI
 from .routes import base, taxi
-# from motor.motor_asyncio import AsyncIOMotorClient
 # from config.config import config
 # from config.settings import settings
-# from llms.llm_provider_factory import LLMProviderFactory
-# from vector_dbs.providers.vector_store import VectorStore
-# from llms.rag_provider import RAGProvider
-# from llms.templates.template_parser import TemplateParser
-# from mongo_db.chat_log_manager import ChatLogManager
+from .features.feature_pipeline import FeatureEngineer
+from .inference.predict import ModelPredictor
 
 
 async def lifespan(app: FastAPI):
     
+    app.feature_engineer = FeatureEngineer()
+
+    app.model_predictor = ModelPredictor(
+        feature_engineer=app.feature_engineer
+    )
     yield  # This is where FastAPI runs the application
 
 

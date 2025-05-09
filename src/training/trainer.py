@@ -1,5 +1,3 @@
-# src/training/trainer.py
-
 import mlflow
 import mlflow.sklearn
 import mlflow.lightgbm

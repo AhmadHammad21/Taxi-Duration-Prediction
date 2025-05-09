@@ -1,5 +1,3 @@
-# training/model_history.py
-
 import mlflow
 import pandas as pd
 from mlflow import MlflowClient
