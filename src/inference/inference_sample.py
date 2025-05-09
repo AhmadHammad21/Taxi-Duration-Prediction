@@ -1,7 +1,6 @@
-import mlflow
 import pandas as pd
-from features.feature_pipeline import FeatureEngineer
-from inference.predict import ModelPredictor
+from ..features.feature_pipeline import FeatureEngineer
+from .predict import ModelPredictor
 
 if __name__ == "__main__":
     # Initialize the FeatureEngineer object
@@ -15,6 +14,12 @@ if __name__ == "__main__":
         "PULocationID": [186, 298],
         "DOLocationID": [79, 50],
         "trip_distance": [4, 10]
+    }
+
+    new_data = {
+        "PULocationID": ["186"],
+        "DOLocationID": ["79"],
+        "trip_distance": ["4"]
     }
     new_data_df = pd.DataFrame(new_data)
 

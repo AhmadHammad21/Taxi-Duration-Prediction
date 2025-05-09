@@ -1,4 +1,4 @@
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, Tuple
 from sklearn.base import RegressorMixin
 from .trainer import ModelTrainer
 

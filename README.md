@@ -64,6 +64,16 @@ docker-compose up -d
 uvicorn src.app:app --reload --host 0.0.0.0 --port 8000
 ```
 
+## Images
+
+### MLflow UI
+
+![MLflow UI](images/mlflow_ui.png)
+
+### FastAPI Server
+
+![FastAPI Server](images/fastapi_server.png)
+
 ## Project Structure
 Brief explanation of the repository organization.
 ```
@@ -88,7 +98,7 @@ taxi-duration-prediction/
 - ✅ Preprocessing & feature engineering
 - ✅ MLflow, Artifacts, Model Registry, Training Pipeline
 - ✅ Inference Pipeline
-- [ ] FastAPI API
+- ✅ FastAPI API
 - [ ] Add Tests
 - [ ] Double Check each module and ensure best practices
 - [ ] Modify Settings
