@@ -99,8 +99,8 @@ taxi-duration-prediction/
 - ✅ MLflow, Artifacts, Model Registry, Training Pipeline
 - ✅ Inference Pipeline
 - ✅ FastAPI API
-- [ ] Add Tests
-- [ ] Double Check each module and ensure best practices
+- ✅ Add Tests (Unit and Integration Tests)
+- ✅ Double Check each module and ensure best practices
 - [ ] Modify Settings
 - [ ] Add Workflow (CI/CD)
 - [ ] Docker / Docker Compose

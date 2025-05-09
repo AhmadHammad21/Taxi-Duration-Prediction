@@ -2,10 +2,9 @@ import pandas as pd
 from pathlib import Path
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-from config.settings import AppSettings
 
 class DataDownloader:
-    def __init__(self, settings: AppSettings):
+    def __init__(self, settings):
         self.settings = settings
         self.train_dir = Path(settings.RAW_DATA_DIRECTORY) / "train"
         self.test_dir = Path(settings.RAW_DATA_DIRECTORY) / "test"

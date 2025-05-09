@@ -33,7 +33,7 @@ class ModelPredictor:
         """
         return self.feature_engineer.inference(data)
 
-    def predict(self, data: pd.DataFrame):
+    def predict(self, data: pd.DataFrame) -> list:
         """
         Preprocess the input data, make predictions using the model, and return the results.
         """
@@ -43,4 +43,4 @@ class ModelPredictor:
         # Make predictions using the model
         predictions = self.model.predict(processed_data)
         
-        return predictions
+        return list(predictions)

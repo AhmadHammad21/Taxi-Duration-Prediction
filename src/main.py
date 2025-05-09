@@ -3,13 +3,9 @@ from data_pulling.download_data import DataDownloader
 from features.feature_pipeline import FeatureEngineer
 from data_pulling.read_data import load_train_test, save_processed_data
 from pathlib import Path
-from training.trainer import ModelTrainer
 from training.multi_model_trainer import MultiModelTrainer
 from training.model_history import ModelHistory
 from sklearn.linear_model import LinearRegression
-from xgboost import XGBRegressor
-from lightgbm import LGBMRegressor
-from catboost import CatBoostRegressor
 
 
 if __name__ == "__main__":
