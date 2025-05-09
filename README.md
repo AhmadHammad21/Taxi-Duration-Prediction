@@ -96,13 +96,15 @@ taxi-duration-prediction/
 - ✅ Structure the project and modules
 - ✅ Script to download data
 - ✅ Preprocessing & feature engineering
-- ✅ MLflow, Artifacts, Model Registry, Training Pipeline
+- ✅ MLflow Experiments Tracking, Artifacts, Model Registry, Training Pipeline
 - ✅ Inference Pipeline
 - ✅ FastAPI API
 - ✅ Add Tests (Unit and Integration Tests)
 - ✅ Double Check each module and ensure best practices
 - [ ] Modify Settings
-- [ ] Add Workflow (CI/CD)
+- [ ] Use loguro for logging
+- [ ] Data Version Control (DVC)
+- [ ] Add Workflow (CI/CD) GitHub Actions
 - [ ] Docker / Docker Compose
 - [ ] Monitoring
 - [ ] Grafana / Prometheus
