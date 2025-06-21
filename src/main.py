@@ -7,7 +7,7 @@ from training.multi_model_trainer import MultiModelTrainer
 from training.model_history import ModelHistory
 from sklearn.linear_model import LinearRegression
 from loguru import logger
-from src.utils.logging_config import setup_logging
+from utils.logging_config import setup_logging
 
 
 if __name__ == "__main__":

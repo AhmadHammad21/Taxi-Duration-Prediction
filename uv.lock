@@ -1794,6 +1794,7 @@ dependencies = [
     { name = "pyarrow" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
+    { name = "pytest" },
     { name = "requests" },
     { name = "scikit-learn" },
     { name = "uvicorn" },
@@ -1803,7 +1804,6 @@ dependencies = [
 [package.optional-dependencies]
 dev = [
     { name = "ipykernel" },
-    { name = "pytest" },
 ]
 
 [package.metadata]
@@ -1821,7 +1821,7 @@ requires-dist = [
     { name = "pyarrow", specifier = ">=19.0.1" },
     { name = "pydantic", specifier = ">=2.11.3" },
     { name = "pydantic-settings", specifier = ">=2.9.1" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3.5" },
+    { name = "pytest", specifier = ">=8.3.5" },
     { name = "requests", specifier = ">=2.32.3" },
     { name = "scikit-learn", specifier = ">=1.6.1" },
     { name = "uvicorn", specifier = ">=0.34.2" },

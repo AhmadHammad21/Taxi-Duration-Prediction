@@ -1,6 +1,9 @@
 from loguru import logger
 import sys
-from src.config.settings import settings
+try:
+    from config.settings import settings
+except ImportError:
+    from src.config.settings import settings
 
 
 def setup_logging():
