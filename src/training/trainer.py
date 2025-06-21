@@ -5,6 +5,7 @@ import mlflow.xgboost
 import json
 from pathlib import Path
 from .mlflow_utils import log_regression_metrics_run
+from loguru import logger
 
 
 class ModelTrainer:
@@ -56,5 +57,5 @@ class ModelTrainer:
         with open("artifacts/best_model.json", "w") as f:
             json.dump(metadata, f, indent=4)
 
-        print(f"🏆 Best model: {model_name} with MAE: {info['mae']}")
-        print("📁 Saved best model metadata to artifacts/best_model.json")
+        logger.info(f"🏆 Best model: {model_name} with MAE: {info['mae']}")
+        logger.info("📁 Saved best model metadata to artifacts/best_model.json")

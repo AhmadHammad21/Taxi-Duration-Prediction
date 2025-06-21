@@ -3,6 +3,7 @@ import pandas as pd
 from fastapi import APIRouter, Request, status, Request
 from fastapi.responses import JSONResponse
 from ..schemas.taxi_schema import DistanceInput, PredictionInput
+from loguru import logger
 
 
 taxi_router = APIRouter(
@@ -37,7 +38,7 @@ async def predict(request: Request, input_data: PredictionInput):
         new_data_df = pd.DataFrame(new_data)
 
         # Predict using the model
-        duration_prediction = request.app.model_predictor.predict(new_data_df)
+        duration_prediction = request.app.state.model_predictor.predict(new_data_df)
         duration_prediction = float(duration_prediction[0])
         
         return JSONResponse(
@@ -48,7 +49,7 @@ async def predict(request: Request, input_data: PredictionInput):
         )
 
     except Exception as e:
-        print(str(e))
+        logger.error(str(e))
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={
@@ -68,7 +69,7 @@ async def measure_distance(input_data: DistanceInput):
             content={"distance": distance}
         )
     except Exception as e:
-        print(str(e))
+        logger.error(str(e))
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"error": "No answer could be generated"}

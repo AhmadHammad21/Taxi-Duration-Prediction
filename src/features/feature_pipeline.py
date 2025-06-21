@@ -1,12 +1,8 @@
 import pandas as pd
-import logging
+from loguru import logger
 from typing import List, Optional
 from sklearn.feature_extraction import DictVectorizer
 import joblib
-
-# Setup logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 class FeatureEngineer:
     """
@@ -87,6 +83,7 @@ class FeatureEngineer:
                 self.dv = joblib.load(self.dv_path)
                 logger.info(f"DictVectorizer loaded from {self.dv_path}")
             except FileNotFoundError:
+                logger.error(f"DictVectorizer not found at {self.dv_path}. Please run fit_transform first.")
                 raise ValueError(f"DictVectorizer not found. Please run fit_transform first.")
         
         df = self._clean_and_engineer(df)
@@ -104,6 +101,7 @@ class FeatureEngineer:
                 self.dv = joblib.load(self.dv_path)
                 logger.info(f"DictVectorizer loaded from {self.dv_path}")
             except FileNotFoundError:
+                logger.error(f"DictVectorizer not found at {self.dv_path}. Please run fit_transform first.")
                 raise ValueError(f"DictVectorizer not found. Please run fit_transform first.")
         
         df[self.PU] = df[self.PU].astype(str)

@@ -2,6 +2,7 @@ import pandas as pd
 from pathlib import Path
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+from loguru import logger
 
 class DataDownloader:
     def __init__(self, settings):
@@ -32,29 +33,29 @@ class DataDownloader:
         output_path = output_dir / filename
 
         if output_path.exists():
-            print(f"⚠️ File already exists: {output_path}, skipping download.")
+            logger.warning(f"⚠️ File already exists: {output_path}, skipping download.")
             return
 
         df = pd.read_parquet(url)
         df.to_parquet(output_path)
-        print(f"✅ Saved data to {output_path}")
+        logger.info(f"✅ Saved data to {output_path}")
 
     def download_split(self, start: str, end: str, out_dir: Path):
         months = self.generate_month_range(start, end)
         for year_month in months:
             url = self.settings.DATA_URL.format(year_month=year_month)
-            print(f"⬇️ Downloading: {url}")
+            logger.info(f"⬇️ Downloading: {url}")
             self.download_and_save_parquet_file(url, out_dir)
 
     def download_all(self):
-        print("📥 Downloading training data...")
+        logger.info("📥 Downloading training data...")
         self.download_split(
             self.settings.TRAINING_DATA_DATE["start"],
             self.settings.TRAINING_DATA_DATE["end"],
             self.train_dir
         )
 
-        print("📥 Downloading testing data...")
+        logger.info("📥 Downloading testing data...")
         self.download_split(
             self.settings.TESTING_DATA_DATE["start"],
             self.settings.TESTING_DATA_DATE["end"],

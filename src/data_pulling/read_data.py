@@ -2,6 +2,7 @@ import pandas as pd
 from pathlib import Path
 import os
 import numpy as np
+from loguru import logger
 
 
 def load_and_concat_parquet_files(folder_path: Path) -> pd.DataFrame:
@@ -30,7 +31,7 @@ def save_processed_data(X, y,
     output_path = output_dir / filename
 
     np.savez_compressed(output_path, X=X, y=y)
-    print(f"✅ Saved processed data to {output_path}")
+    logger.info(f"✅ Saved processed data to {output_path}")
 
 
 def load_processed_data(filename: str, output_dir: Path):
@@ -40,7 +41,7 @@ def load_processed_data(filename: str, output_dir: Path):
     X = data["X"]
     y = data["y"]
     
-    print(f"📥 Loaded processed data from {input_path}")
+    logger.info(f"📥 Loaded processed data from {input_path}")
 
     #X_train, y_train = load_processed_data("train_processed.npz", output_dir)
     return X, y

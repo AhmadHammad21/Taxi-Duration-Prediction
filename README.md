@@ -143,7 +143,7 @@ taxi-duration-prediction/
 - ✅ Add Tests (Unit and Integration Tests)
 - ✅ Double Check each module and ensure best practices
 - [ ] Modify Settings
-- [ ] Use loguro for logging
+- ✅ Use loguro for logging
 - [ ] Data Version Control (DVC)
 - [ ] Add Workflow (CI/CD) GitHub Actions
 - ✅ Docker / Docker Compose

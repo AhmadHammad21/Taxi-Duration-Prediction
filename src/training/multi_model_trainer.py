@@ -1,6 +1,7 @@
 from typing import Dict, Any, Tuple
 from sklearn.base import RegressorMixin
 from .trainer import ModelTrainer
+from loguru import logger
 
 
 class MultiModelTrainer:
@@ -16,7 +17,7 @@ class MultiModelTrainer:
         y_test
     ):
         for model_name, (model_cls, params) in models.items():
-            print(f"🚀 Training {model_name}...")
+            logger.info(f"🚀 Training {model_name}...")
             model = model_cls(**params)
             self.model_trainer.train(
                 model=model,
@@ -26,4 +27,4 @@ class MultiModelTrainer:
                 X_test=X_test,
                 y_test=y_test
             )
-            print(f"🚀 Finished Training {model_name}...")
+            logger.info(f"🚀 Finished Training {model_name}...")

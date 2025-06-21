@@ -3,6 +3,7 @@ import pandas as pd
 from mlflow import MlflowClient
 from typing import Dict, Any
 import json
+from loguru import logger
 
 class ModelHistory:
     def __init__(self, experiment_name: str):
@@ -65,4 +66,4 @@ class ModelHistory:
         best_model = self.get_best_model()
         with open("src/artifacts/best_model.json", "w") as f:
             json.dump(best_model, f, indent=4)
-        print(f"🏆 Best model metadata saved: {best_model['model_name']} (MAE: {best_model['test_mean_absolute_error']})")
+        logger.info(f"🏆 Best model metadata saved: {best_model['model_name']} (MAE: {best_model['test_mean_absolute_error']})")

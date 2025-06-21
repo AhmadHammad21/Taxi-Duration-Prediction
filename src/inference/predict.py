@@ -2,6 +2,7 @@ import os
 import json
 import mlflow
 import pandas as pd
+from loguru import logger
 
 
 def find_run_path(run_id, mlruns_path="mlruns"):
@@ -20,10 +21,10 @@ def load_best_model_local():
 
     run_id = metadata["run_id"]
     model_local_path = find_run_path(run_id)
-    print(f"Loading model from: {model_local_path}")
+    logger.info(f"Loading model from: {model_local_path}")
 
     model = mlflow.pyfunc.load_model(model_local_path)
-    print("Model loaded successfully!")
+    logger.info("Model loaded successfully!")
     return model
 
 
@@ -35,14 +36,14 @@ def load_best_model():
     # Load the best model metadata from the saved file
     with open("src/artifacts/best_model.json") as f:
         metadata = json.load(f)
-    print(f"metadata: {metadata}")
+    logger.info(f"metadata: {metadata}")
     
     # Load the model from MLflow using the run ID and model name
     model_uri = f"runs:/{metadata['run_id']}/model"
-    print(f"model_uri: {model_uri}")
+    logger.info(f"model_uri: {model_uri}")
 
     model = mlflow.pyfunc.load_model(model_uri)
-    print("Model loaded successfully!")
+    logger.info("Model loaded successfully!")
     return model
 
 class ModelPredictor:
@@ -55,7 +56,7 @@ class ModelPredictor:
         try:
             self.model = load_best_model()  # This dynamically loads the model
         except Exception as e:
-            print(f"Error in ModelPredictor: {str(e)}")
+            logger.error(f"Error in ModelPredictor: {str(e)}")
             self.model = load_best_model_local()
         self.feature_engineer = feature_engineer
 

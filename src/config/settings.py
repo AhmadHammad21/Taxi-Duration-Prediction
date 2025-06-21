@@ -7,6 +7,9 @@ class AppSettings:
     RAW_DATA_DIRECTORY: str = "data/raw"
     PROCESSED_DATA_DIRECTORY: str = "data/processed"
 
+    LOG_LEVEL: str = "INFO"
+    LOG_FILE: str = "logs/app.log"
+
     DATA_URL = "https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_{year_month}.parquet"
 
     TRAINING_DATA_DATE: dict = field(default_factory=lambda: {
