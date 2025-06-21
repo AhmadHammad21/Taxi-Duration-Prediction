@@ -30,14 +30,21 @@ cd Taxi-Duration-Prediction
 # Windows
 powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
 
-# macOS and Linux
+# MacOS and Linux
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Create and activate virtual environment
 uv init
 
-# Syncing the dependencies to your environment
+# Syncing the dependencies to your environment (all packages)
 uv sync
+
+# Optional: You can install certain dependencies
+# Optional: Install main + dev dependencies (for basic development)
+uv sync --extra dev
+
+# Optional: Install main + train dependencies (for ML training work)
+uv sync --extra train
 ```
 
 ## Usage
@@ -53,16 +60,50 @@ mlflow ui --backend-store-uri sqlite:///mlflow.db
 python src/main.py
 ```
 
-### API Service
-```bash
-cd deployment
-docker-compose up -d
-```
-
-### Run the FastAPI Server
+### Development Server
+Run the FastAPI server locally for development.
 ```bash
 uvicorn src.app:app --reload --host 0.0.0.0 --port 8000
 ```
+
+### Deployment Options
+
+#### Option 1: Docker Container (FastAPI Only)
+Run just the FastAPI inference server in a container.
+
+```bash
+# Build the Docker image
+docker build -t taxi-duration-prediction .
+
+# Run the container
+docker run -p 8000:8000 taxi-duration-prediction
+```
+
+#### Option 2: Full Stack with Docker Compose (Recommended)
+Run both MLflow server and FastAPI server together.
+
+```bash
+# Build and start the servers
+docker-compose up --build -d # in detached mode
+# OR 
+docker compose up --build 
+```
+
+This will start:
+- **FastAPI server** at http://localhost:8000
+- **MLflow server** at http://localhost:5000
+
+To stop the services:
+```bash
+docker-compose down
+```
+
+### Access the Services
+
+- **FastAPI API Documentation**: http://localhost:8000/docs
+- **MLflow UI**: http://localhost:5000 (when using docker-compose)
+- **Health Check**: http://localhost:8000/health
+
 
 ## Images
 
@@ -105,7 +146,7 @@ taxi-duration-prediction/
 - [ ] Use loguro for logging
 - [ ] Data Version Control (DVC)
 - [ ] Add Workflow (CI/CD) GitHub Actions
-- [ ] Docker / Docker Compose
+- ✅ Docker / Docker Compose
 - [ ] Monitoring
 - [ ] Grafana / Prometheus
 - [ ] Add Kubernetes
