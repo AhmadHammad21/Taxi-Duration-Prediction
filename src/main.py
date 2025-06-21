@@ -6,9 +6,12 @@ from pathlib import Path
 from training.multi_model_trainer import MultiModelTrainer
 from training.model_history import ModelHistory
 from sklearn.linear_model import LinearRegression
+from loguru import logger
+from src.utils.logging_config import setup_logging
 
 
 if __name__ == "__main__":
+    setup_logging()
     experiment_name = "nyc-taxi-experiment"
 
     # Download Data
@@ -66,5 +69,5 @@ if __name__ == "__main__":
 
     # Optionally: print all runs for reference
     all_runs_df = model_history.list_all_runs()
-    print("All Runs:")
-    print(all_runs_df)
+    logger.info("All Runs:")
+    logger.info(f"\n{all_runs_df.to_string()}")

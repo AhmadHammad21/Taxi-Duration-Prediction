@@ -1,19 +1,21 @@
 from fastapi import FastAPI
 from .routes import base, taxi
+from contextlib import asynccontextmanager
 # from config.config import config
 # from config.settings import settings
 from .features.feature_pipeline import FeatureEngineer
 from .inference.predict import ModelPredictor
+from .utils.logging_config import setup_logging
 
 
+@asynccontextmanager
 async def lifespan(app: FastAPI):
-    
-    app.feature_engineer = FeatureEngineer()
-
-    app.model_predictor = ModelPredictor(
-        feature_engineer=app.feature_engineer
+    setup_logging()
+    app.state.feature_engineer = FeatureEngineer()
+    app.state.model_predictor = ModelPredictor(
+        feature_engineer=app.state.feature_engineer
     )
-    yield  # This is where FastAPI runs the application
+    yield
 
 
 app = FastAPI(lifespan=lifespan)
