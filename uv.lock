@@ -1772,7 +1772,6 @@ dependencies = [
     { name = "catboost" },
     { name = "fastapi" },
     { name = "fastparquet" },
-    { name = "ipykernel" },
     { name = "lightgbm" },
     { name = "matplotlib" },
     { name = "mlflow" },
@@ -1781,11 +1780,16 @@ dependencies = [
     { name = "pyarrow" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
-    { name = "pytest" },
     { name = "requests" },
     { name = "scikit-learn" },
     { name = "uvicorn" },
     { name = "xgboost" },
+]
+
+[package.optional-dependencies]
+dev = [
+    { name = "ipykernel" },
+    { name = "pytest" },
 ]
 
 [package.metadata]
@@ -1793,7 +1797,7 @@ requires-dist = [
     { name = "catboost", specifier = ">=1.2.8" },
     { name = "fastapi", specifier = ">=0.115.12" },
     { name = "fastparquet", specifier = ">=2024.11.0" },
-    { name = "ipykernel", specifier = ">=6.29.5" },
+    { name = "ipykernel", marker = "extra == 'dev'", specifier = ">=6.29.5" },
     { name = "lightgbm", specifier = ">=4.6.0" },
     { name = "matplotlib", specifier = ">=3.10.1" },
     { name = "mlflow", specifier = ">=2.22.0" },
@@ -1802,12 +1806,13 @@ requires-dist = [
     { name = "pyarrow", specifier = ">=19.0.1" },
     { name = "pydantic", specifier = ">=2.11.3" },
     { name = "pydantic-settings", specifier = ">=2.9.1" },
-    { name = "pytest", specifier = ">=8.3.5" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3.5" },
     { name = "requests", specifier = ">=2.32.3" },
     { name = "scikit-learn", specifier = ">=1.6.1" },
     { name = "uvicorn", specifier = ">=0.34.2" },
     { name = "xgboost", specifier = ">=3.0.0" },
 ]
+provides-extras = ["dev"]
 
 [[package]]
 name = "threadpoolctl"
