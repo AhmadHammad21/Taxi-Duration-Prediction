@@ -172,6 +172,8 @@ jobs:
     if: |
       (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev' || github.event_name == 'workflow_dispatch') &&
       (github.event_name != 'workflow_dispatch' || github.event.inputs.action == 'deploy')
+    outputs:
+      image: ${{ steps.build-push.outputs.image }}
     
     steps:
     - name: Checkout code
@@ -209,6 +211,7 @@ jobs:
         aws ecr create-repository --repository-name ${{ steps.ecr-repo.outputs.repository }}
       
     - name: Build, tag, and push Lambda container to Amazon ECR
+      id: build-push
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         IMAGE_TAG: latest
