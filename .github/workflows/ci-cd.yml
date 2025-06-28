@@ -32,10 +32,11 @@ on:
 
 env:
   AWS_REGION: us-east-1
-  ECR_REPOSITORY: taxi-duration-prediction-lambda
+  ECR_REPOSITORY_DEV: taxi-duration-prediction-dev
+  ECR_REPOSITORY_PROD: taxi-duration-prediction-prod
   LAMBDA_FUNCTION_DEV: taxi-prediction-dev
   LAMBDA_FUNCTION_PROD: taxi-prediction-prod
-  API_GATEAWY_NAME: Taxi Prediction API
+  API_GATEWAY_NAME: Taxi Prediction API
 
 jobs:
   # ================================ Code Quality & Testing ================================
@@ -193,21 +194,30 @@ jobs:
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@v2
       
+    - name: Determine ECR repository
+      id: ecr-repo
+      run: |
+        if [[ "${{ github.ref }}" == "refs/heads/dev" ]] || [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ github.event.inputs.environment }}" == "dev" ]]; then
+          echo "repository=${{ env.ECR_REPOSITORY_DEV }}" >> $GITHUB_OUTPUT
+        else
+          echo "repository=${{ env.ECR_REPOSITORY_PROD }}" >> $GITHUB_OUTPUT
+        fi
+      
     - name: Create ECR repository if not exists
       run: |
-        aws ecr describe-repositories --repository-names ${{ env.ECR_REPOSITORY }} || \
-        aws ecr create-repository --repository-name ${{ env.ECR_REPOSITORY }}
+        aws ecr describe-repositories --repository-names ${{ steps.ecr-repo.outputs.repository }} || \
+        aws ecr create-repository --repository-name ${{ steps.ecr-repo.outputs.repository }}
       
     - name: Build, tag, and push Lambda container to Amazon ECR
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         IMAGE_TAG: ${{ github.sha }}
       run: |
-        docker build -f Dockerfile.lambda -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-        docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
-        echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+        docker build -f Dockerfile.lambda -t $ECR_REGISTRY/${{ steps.ecr-repo.outputs.repository }}:$IMAGE_TAG .
+        docker tag $ECR_REGISTRY/${{ steps.ecr-repo.outputs.repository }}:$IMAGE_TAG $ECR_REGISTRY/${{ steps.ecr-repo.outputs.repository }}:latest
+        docker push $ECR_REGISTRY/${{ steps.ecr-repo.outputs.repository }}:$IMAGE_TAG
+        docker push $ECR_REGISTRY/${{ steps.ecr-repo.outputs.repository }}:latest
+        echo "image=$ECR_REGISTRY/${{ steps.ecr-repo.outputs.repository }}:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
   # ================================ Deploy to Development ================================
   deploy-dev:

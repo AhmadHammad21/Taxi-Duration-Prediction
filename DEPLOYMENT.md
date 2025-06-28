@@ -94,12 +94,12 @@ Add the following secrets to your GitHub repository:
 
 1. **Create Development Branch**
    ```bash
-   git checkout -b develop
-   git push origin develop
+   git checkout -b dev
+   git push origin dev
    ```
 
 2. **Trigger Development Deployment**
-   - The CI/CD pipeline will automatically deploy to development when you push to the `develop` branch
+   - The CI/CD pipeline will automatically deploy to development when you push to the `dev` branch
    - Or manually trigger via GitHub Actions with environment set to "dev"
 
 3. **Verify Deployment**
@@ -131,7 +131,7 @@ Add the following secrets to your GitHub repository:
 1. **Merge to Main Branch**
    ```bash
    git checkout main
-   git merge develop
+   git merge dev
    git push origin main
    ```
 
