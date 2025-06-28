@@ -10,7 +10,8 @@ import os
 @pytest.fixture
 def mock_settings():
     mock = AppSettings()
-    mock.RAW_DATA_DIRECTORY = "/mock/raw_data"
+    # Use a relative path that will be overridden by each test
+    mock.RAW_DATA_DIRECTORY = "./test_data"
     mock.DATA_URL = "https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_{year_month}.parquet"
     mock.TRAINING_DATA_DATE = {"start": "2022-01", "end": "2022-03"}
     mock.TESTING_DATA_DATE = {"start": "2022-04", "end": "2022-06"}
