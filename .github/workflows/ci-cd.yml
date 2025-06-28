@@ -211,12 +211,10 @@ jobs:
     - name: Build, tag, and push Lambda container to Amazon ECR
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        IMAGE_TAG: ${{ github.sha }}
+        IMAGE_TAG: latest
       run: |
         docker build -f Dockerfile.lambda -t $ECR_REGISTRY/${{ steps.ecr-repo.outputs.repository }}:$IMAGE_TAG .
-        docker tag $ECR_REGISTRY/${{ steps.ecr-repo.outputs.repository }}:$IMAGE_TAG $ECR_REGISTRY/${{ steps.ecr-repo.outputs.repository }}:latest
         docker push $ECR_REGISTRY/${{ steps.ecr-repo.outputs.repository }}:$IMAGE_TAG
-        docker push $ECR_REGISTRY/${{ steps.ecr-repo.outputs.repository }}:latest
         echo "image=$ECR_REGISTRY/${{ steps.ecr-repo.outputs.repository }}:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
   # ================================ Deploy to Development ================================
@@ -243,13 +241,16 @@ jobs:
         
     - name: Create Lambda function for development
       run: |
+        # Get AWS account ID
+        ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+        
         # Create Lambda function if it doesn't exist
         if ! aws lambda get-function --function-name ${{ env.LAMBDA_FUNCTION_DEV }} 2>/dev/null; then
           aws lambda create-function \
             --function-name ${{ env.LAMBDA_FUNCTION_DEV }} \
             --package-type Image \
             --code ImageUri=${{ needs.build-and-push.outputs.image }} \
-            --role arn:aws:iam::ACCOUNT_ID:role/lambda-execution-role \
+            --role arn:aws:iam::$ACCOUNT_ID:role/lambda-execution-role \
             --timeout 30 \
             --memory-size 1024 \
             --environment Variables="{APP_ENV=development,LOG_LEVEL=DEBUG}"
@@ -298,7 +299,7 @@ jobs:
           --http-method POST \
           --type AWS_PROXY \
           --integration-http-method POST \
-          --uri arn:aws:apigateway:${{ env.AWS_REGION }}:lambda:path/2015-03-31/functions/arn:aws:lambda:${{ env.AWS_REGION }}:ACCOUNT_ID:function:${{ env.LAMBDA_FUNCTION_DEV }}/invocations
+          --uri arn:aws:apigateway:${{ env.AWS_REGION }}:lambda:path/2015-03-31/functions/arn:aws:lambda:${{ env.AWS_REGION }}:$ACCOUNT_ID:function:${{ env.LAMBDA_FUNCTION_DEV }}/invocations
           
         # Create Lambda integration for /health
         aws apigateway put-integration \
@@ -307,7 +308,7 @@ jobs:
           --http-method GET \
           --type AWS_PROXY \
           --integration-http-method POST \
-          --uri arn:aws:apigateway:${{ env.AWS_REGION }}:lambda:path/2015-03-31/functions/arn:aws:lambda:${{ env.AWS_REGION }}:ACCOUNT_ID:function:${{ env.LAMBDA_FUNCTION_DEV }}/invocations
+          --uri arn:aws:apigateway:${{ env.AWS_REGION }}:lambda:path/2015-03-31/functions/arn:aws:lambda:${{ env.AWS_REGION }}:$ACCOUNT_ID:function:${{ env.LAMBDA_FUNCTION_DEV }}/invocations
         
         # Add Lambda permission for API Gateway
         aws lambda add-permission \
@@ -315,7 +316,7 @@ jobs:
           --statement-id apigateway-dev \
           --action lambda:InvokeFunction \
           --principal apigateway.amazonaws.com \
-          --source-arn "arn:aws:execute-api:${{ env.AWS_REGION }}:ACCOUNT_ID:$API_ID/*/*/*" || true
+          --source-arn "arn:aws:execute-api:${{ env.AWS_REGION }}:$ACCOUNT_ID:$API_ID/*/*/*" || true
         
         # Deploy API
         DEPLOYMENT_ID=$(aws apigateway create-deployment --rest-api-id $API_ID --stage-name dev --query 'id' --output text)
@@ -369,13 +370,16 @@ jobs:
         
     - name: Create Lambda function for production
       run: |
+        # Get AWS account ID
+        ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+        
         # Create Lambda function if it doesn't exist
         if ! aws lambda get-function --function-name ${{ env.LAMBDA_FUNCTION_PROD }} 2>/dev/null; then
           aws lambda create-function \
             --function-name ${{ env.LAMBDA_FUNCTION_PROD }} \
             --package-type Image \
             --code ImageUri=${{ needs.build-and-push.outputs.image }} \
-            --role arn:aws:iam::ACCOUNT_ID:role/lambda-execution-role \
+            --role arn:aws:iam::$ACCOUNT_ID:role/lambda-execution-role \
             --timeout 30 \
             --memory-size 2048 \
             --environment Variables="{APP_ENV=production,LOG_LEVEL=INFO}"
@@ -424,7 +428,7 @@ jobs:
           --http-method POST \
           --type AWS_PROXY \
           --integration-http-method POST \
-          --uri arn:aws:apigateway:${{ env.AWS_REGION }}:lambda:path/2015-03-31/functions/arn:aws:lambda:${{ env.AWS_REGION }}:ACCOUNT_ID:function:${{ env.LAMBDA_FUNCTION_PROD }}/invocations
+          --uri arn:aws:apigateway:${{ env.AWS_REGION }}:lambda:path/2015-03-31/functions/arn:aws:lambda:${{ env.AWS_REGION }}:$ACCOUNT_ID:function:${{ env.LAMBDA_FUNCTION_PROD }}/invocations
           
         # Create Lambda integration for /health
         aws apigateway put-integration \
@@ -433,7 +437,7 @@ jobs:
           --http-method GET \
           --type AWS_PROXY \
           --integration-http-method POST \
-          --uri arn:aws:apigateway:${{ env.AWS_REGION }}:lambda:path/2015-03-31/functions/arn:aws:lambda:${{ env.AWS_REGION }}:ACCOUNT_ID:function:${{ env.LAMBDA_FUNCTION_PROD }}/invocations
+          --uri arn:aws:apigateway:${{ env.AWS_REGION }}:lambda:path/2015-03-31/functions/arn:aws:lambda:${{ env.AWS_REGION }}:$ACCOUNT_ID:function:${{ env.LAMBDA_FUNCTION_PROD }}/invocations
         
         # Add Lambda permission for API Gateway
         aws lambda add-permission \
@@ -441,7 +445,7 @@ jobs:
           --statement-id apigateway-prod \
           --action lambda:InvokeFunction \
           --principal apigateway.amazonaws.com \
-          --source-arn "arn:aws:execute-api:${{ env.AWS_REGION }}:ACCOUNT_ID:$API_ID/*/*/*" || true
+          --source-arn "arn:aws:execute-api:${{ env.AWS_REGION }}:$ACCOUNT_ID:$API_ID/*/*/*" || true
         
         # Deploy API
         DEPLOYMENT_ID=$(aws apigateway create-deployment --rest-api-id $API_ID --stage-name prod --query 'id' --output text)
