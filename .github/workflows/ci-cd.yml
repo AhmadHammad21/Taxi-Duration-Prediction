@@ -129,15 +129,15 @@ jobs:
         
     - name: Download data
       run: |
-        python src/main.py --download-only
+        uv run python src/main.py --download-only
         
     - name: Train and validate model
       run: |
-        python src/main.py --train-only
+        uv run python src/main.py --train-only
         
     - name: Model performance validation
       run: |
-        python -c "
+        uv run python -c "
         import json
         import mlflow
         from src.training.model_history import ModelHistory
