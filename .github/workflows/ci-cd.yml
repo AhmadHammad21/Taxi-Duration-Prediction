@@ -1,0 +1,528 @@
+name: CI/CD Pipeline - Lambda + API Gateway
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+        - dev
+        - prod
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: taxi-duration-prediction-lambda
+  LAMBDA_FUNCTION_DEV: taxi-prediction-dev
+  LAMBDA_FUNCTION_PROD: taxi-prediction-prod
+  API_GATEAWY_NAME: Taxi Prediction API
+
+jobs:
+  # ================================ Code Quality & Testing ================================
+  code-quality:
+    name: Code Quality & Testing
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+        
+    - name: Install uv
+      uses: astral-sh/setup-uv@v2
+      with:
+        version: latest
+        
+    - name: Install dependencies
+      run: |
+        uv sync --no-dev
+        
+    - name: Run linting
+      run: |
+        uv run ruff check src/ tests/
+        uv run ruff format --check src/ tests/
+        
+    - name: Run type checking
+      run: |
+        uv run mypy src/
+        
+    - name: Run security checks
+      run: |
+        uv run bandit -r src/ -f json -o bandit-report.json || true
+        uv run safety check --json --output safety-report.json || true
+        
+    - name: Run unit tests
+      run: |
+        uv run pytest tests/unit/ -v --cov=src --cov-report=xml --cov-report=html
+        
+    - name: Run integration tests
+      run: |
+        uv run pytest tests/integration/ -v
+        
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+        
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-results
+        path: |
+          coverage.xml
+          htmlcov/
+          bandit-report.json
+          safety-report.json
+
+  # ================================ Model Training & Validation ================================
+  model-training:
+    name: Model Training & Validation
+    runs-on: ubuntu-latest
+    needs: code-quality
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev' || github.event_name == 'workflow_dispatch'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+        
+    - name: Install uv
+      uses: astral-sh/setup-uv@v2
+      with:
+        version: latest
+        
+    - name: Install dependencies
+      run: |
+        uv sync
+        
+    - name: Download data
+      run: |
+        python src/main.py --download-only
+        
+    - name: Train and validate model
+      run: |
+        python src/main.py --train-only
+        
+    - name: Model performance validation
+      run: |
+        python -c "
+        import json
+        import mlflow
+        from src.training.model_history import ModelHistory
+        
+        # Load best model metadata
+        with open('src/artifacts/best_model.json', 'r') as f:
+            metadata = json.load(f)
+        
+        # Check if model meets performance threshold
+        mae = metadata.get('test_mean_absolute_error', float('inf'))
+        if mae > 5.0:  # Threshold: 5 minutes MAE
+            raise ValueError(f'Model performance too poor: MAE = {mae}')
+        
+        print(f'Model validation passed: MAE = {mae}')
+        "
+        
+    - name: Upload model artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: model-artifacts
+        path: |
+          src/artifacts/
+          mlruns/
+          mlflow.db
+
+  # ================================ Build & Push Lambda Container ================================
+  build-and-push:
+    name: Build & Push Lambda Container
+    runs-on: ubuntu-latest
+    needs: [code-quality, model-training]
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev' || github.event_name == 'workflow_dispatch'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Download model artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: model-artifacts
+        path: ./
+        
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+        
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+      
+    - name: Create ECR repository if not exists
+      run: |
+        aws ecr describe-repositories --repository-names ${{ env.ECR_REPOSITORY }} || \
+        aws ecr create-repository --repository-name ${{ env.ECR_REPOSITORY }}
+      
+    - name: Build, tag, and push Lambda container to Amazon ECR
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        docker build -f Dockerfile.lambda -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+        echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+  # ================================ Deploy to Development ================================
+  deploy-dev:
+    name: Deploy to Development
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.ref == 'refs/heads/dev' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'dev')
+    environment: development
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+        
+    - name: Create Lambda function for development
+      run: |
+        # Create Lambda function if it doesn't exist
+        if ! aws lambda get-function --function-name ${{ env.LAMBDA_FUNCTION_DEV }} 2>/dev/null; then
+          aws lambda create-function \
+            --function-name ${{ env.LAMBDA_FUNCTION_DEV }} \
+            --package-type Image \
+            --code ImageUri=${{ needs.build-and-push.outputs.image }} \
+            --role arn:aws:iam::ACCOUNT_ID:role/lambda-execution-role \
+            --timeout 30 \
+            --memory-size 1024 \
+            --environment Variables="{APP_ENV=development,LOG_LEVEL=DEBUG}"
+        else
+          # Update existing function
+          aws lambda update-function-code \
+            --function-name ${{ env.LAMBDA_FUNCTION_DEV }} \
+            --image-uri ${{ needs.build-and-push.outputs.image }}
+        fi
+        
+    - name: Create API Gateway for development
+      run: |
+        # Create API Gateway REST API if it doesn't exist
+        API_ID=$(aws apigateway create-rest-api --name "${{ env.API_GATEWAY_NAME }} - Dev" --description "Development API for taxi duration prediction" --query 'id' --output text 2>/dev/null || \
+        aws apigateway get-rest-apis --query 'items[?name==`'"${{ env.API_GATEWAY_NAME }}"' - Dev`].id' --output text)
+        
+        # Get root resource ID
+        ROOT_ID=$(aws apigateway get-resources --rest-api-id $API_ID --query 'items[?path==`/`].id' --output text)
+        
+        # Create /predict resource
+        PREDICT_RESOURCE_ID=$(aws apigateway create-resource --rest-api-id $API_ID --parent-id $ROOT_ID --path-part "predict" --query 'id' --output text 2>/dev/null || \
+        aws apigateway get-resources --rest-api-id $API_ID --query 'items[?path==`/predict`].id' --output text)
+        
+        # Create /health resource
+        HEALTH_RESOURCE_ID=$(aws apigateway create-resource --rest-api-id $API_ID --parent-id $ROOT_ID --path-part "health" --query 'id' --output text 2>/dev/null || \
+        aws apigateway get-resources --rest-api-id $API_ID --query 'items[?path==`/health`].id' --output text)
+        
+        # Create POST method for /predict
+        aws apigateway put-method \
+          --rest-api-id $API_ID \
+          --resource-id $PREDICT_RESOURCE_ID \
+          --http-method POST \
+          --authorization-type NONE
+          
+        # Create GET method for /health
+        aws apigateway put-method \
+          --rest-api-id $API_ID \
+          --resource-id $HEALTH_RESOURCE_ID \
+          --http-method GET \
+          --authorization-type NONE
+          
+        # Create Lambda integration for /predict
+        aws apigateway put-integration \
+          --rest-api-id $API_ID \
+          --resource-id $PREDICT_RESOURCE_ID \
+          --http-method POST \
+          --type AWS_PROXY \
+          --integration-http-method POST \
+          --uri arn:aws:apigateway:${{ env.AWS_REGION }}:lambda:path/2015-03-31/functions/arn:aws:lambda:${{ env.AWS_REGION }}:ACCOUNT_ID:function:${{ env.LAMBDA_FUNCTION_DEV }}/invocations
+          
+        # Create Lambda integration for /health
+        aws apigateway put-integration \
+          --rest-api-id $API_ID \
+          --resource-id $HEALTH_RESOURCE_ID \
+          --http-method GET \
+          --type AWS_PROXY \
+          --integration-http-method POST \
+          --uri arn:aws:apigateway:${{ env.AWS_REGION }}:lambda:path/2015-03-31/functions/arn:aws:lambda:${{ env.AWS_REGION }}:ACCOUNT_ID:function:${{ env.LAMBDA_FUNCTION_DEV }}/invocations
+        
+        # Add Lambda permission for API Gateway
+        aws lambda add-permission \
+          --function-name ${{ env.LAMBDA_FUNCTION_DEV }} \
+          --statement-id apigateway-dev \
+          --action lambda:InvokeFunction \
+          --principal apigateway.amazonaws.com \
+          --source-arn "arn:aws:execute-api:${{ env.AWS_REGION }}:ACCOUNT_ID:$API_ID/*/*/*" || true
+        
+        # Deploy API
+        DEPLOYMENT_ID=$(aws apigateway create-deployment --rest-api-id $API_ID --stage-name dev --query 'id' --output text)
+        
+        echo "API_ID=$API_ID" >> $GITHUB_ENV
+        echo "API_URL=https://$API_ID.execute-api.${{ env.AWS_REGION }}.amazonaws.com/dev" >> $GITHUB_ENV
+        
+    - name: Wait for Lambda function to be ready
+      run: |
+        aws lambda wait function-updated --function-name ${{ env.LAMBDA_FUNCTION_DEV }}
+        sleep 10
+        
+    - name: Run smoke tests for development
+      run: |
+        # Test health endpoint
+        curl -f ${{ env.API_URL }}/health || exit 1
+        
+        # Test prediction endpoint
+        curl -f -X POST ${{ env.API_URL }}/predict \
+          -H "Content-Type: application/json" \
+          -d '{"PULocationID": 1, "DOLocationID": 2, "trip_distance": 5.0}' || exit 1
+          
+    - name: Output development URL
+      run: |
+        echo "🚀 Development API deployed successfully!"
+        echo "📍 API URL: ${{ env.API_URL }}"
+        echo "🔗 Health Check: ${{ env.API_URL }}/health"
+        echo "🔗 Prediction Endpoint: ${{ env.API_URL }}/predict"
+
+  # ================================ Deploy to Production ================================
+  deploy-prod:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'prod')
+    environment: production
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+        
+    - name: Create Lambda function for production
+      run: |
+        # Create Lambda function if it doesn't exist
+        if ! aws lambda get-function --function-name ${{ env.LAMBDA_FUNCTION_PROD }} 2>/dev/null; then
+          aws lambda create-function \
+            --function-name ${{ env.LAMBDA_FUNCTION_PROD }} \
+            --package-type Image \
+            --code ImageUri=${{ needs.build-and-push.outputs.image }} \
+            --role arn:aws:iam::ACCOUNT_ID:role/lambda-execution-role \
+            --timeout 30 \
+            --memory-size 2048 \
+            --environment Variables="{APP_ENV=production,LOG_LEVEL=INFO}"
+        else
+          # Update existing function
+          aws lambda update-function-code \
+            --function-name ${{ env.LAMBDA_FUNCTION_PROD }} \
+            --image-uri ${{ needs.build-and-push.outputs.image }}
+        fi
+        
+    - name: Create API Gateway for production
+      run: |
+        # Create API Gateway REST API if it doesn't exist
+        API_ID=$(aws apigateway create-rest-api --name "${{ env.API_GATEWAY_NAME }} - Prod" --description "Production API for taxi duration prediction" --query 'id' --output text 2>/dev/null || \
+        aws apigateway get-rest-apis --query 'items[?name==`'"${{ env.API_GATEWAY_NAME }}"' - Prod`].id' --output text)
+        
+        # Get root resource ID
+        ROOT_ID=$(aws apigateway get-resources --rest-api-id $API_ID --query 'items[?path==`/`].id' --output text)
+        
+        # Create /predict resource
+        PREDICT_RESOURCE_ID=$(aws apigateway create-resource --rest-api-id $API_ID --parent-id $ROOT_ID --path-part "predict" --query 'id' --output text 2>/dev/null || \
+        aws apigateway get-resources --rest-api-id $API_ID --query 'items[?path==`/predict`].id' --output text)
+        
+        # Create /health resource
+        HEALTH_RESOURCE_ID=$(aws apigateway create-resource --rest-api-id $API_ID --parent-id $ROOT_ID --path-part "health" --query 'id' --output text 2>/dev/null || \
+        aws apigateway get-resources --rest-api-id $API_ID --query 'items[?path==`/health`].id' --output text)
+        
+        # Create POST method for /predict
+        aws apigateway put-method \
+          --rest-api-id $API_ID \
+          --resource-id $PREDICT_RESOURCE_ID \
+          --http-method POST \
+          --authorization-type NONE
+          
+        # Create GET method for /health
+        aws apigateway put-method \
+          --rest-api-id $API_ID \
+          --resource-id $HEALTH_RESOURCE_ID \
+          --http-method GET \
+          --authorization-type NONE
+          
+        # Create Lambda integration for /predict
+        aws apigateway put-integration \
+          --rest-api-id $API_ID \
+          --resource-id $PREDICT_RESOURCE_ID \
+          --http-method POST \
+          --type AWS_PROXY \
+          --integration-http-method POST \
+          --uri arn:aws:apigateway:${{ env.AWS_REGION }}:lambda:path/2015-03-31/functions/arn:aws:lambda:${{ env.AWS_REGION }}:ACCOUNT_ID:function:${{ env.LAMBDA_FUNCTION_PROD }}/invocations
+          
+        # Create Lambda integration for /health
+        aws apigateway put-integration \
+          --rest-api-id $API_ID \
+          --resource-id $HEALTH_RESOURCE_ID \
+          --http-method GET \
+          --type AWS_PROXY \
+          --integration-http-method POST \
+          --uri arn:aws:apigateway:${{ env.AWS_REGION }}:lambda:path/2015-03-31/functions/arn:aws:lambda:${{ env.AWS_REGION }}:ACCOUNT_ID:function:${{ env.LAMBDA_FUNCTION_PROD }}/invocations
+        
+        # Add Lambda permission for API Gateway
+        aws lambda add-permission \
+          --function-name ${{ env.LAMBDA_FUNCTION_PROD }} \
+          --statement-id apigateway-prod \
+          --action lambda:InvokeFunction \
+          --principal apigateway.amazonaws.com \
+          --source-arn "arn:aws:execute-api:${{ env.AWS_REGION }}:ACCOUNT_ID:$API_ID/*/*/*" || true
+        
+        # Deploy API
+        DEPLOYMENT_ID=$(aws apigateway create-deployment --rest-api-id $API_ID --stage-name prod --query 'id' --output text)
+        
+        echo "API_ID=$API_ID" >> $GITHUB_ENV
+        echo "API_URL=https://$API_ID.execute-api.${{ env.AWS_REGION }}.amazonaws.com/prod" >> $GITHUB_ENV
+        
+    - name: Wait for Lambda function to be ready
+      run: |
+        aws lambda wait function-updated --function-name ${{ env.LAMBDA_FUNCTION_PROD }}
+        sleep 10
+        
+    - name: Run production tests
+      run: |
+        # Test health endpoint
+        curl -f ${{ env.API_URL }}/health || exit 1
+        
+        # Test prediction endpoint with load
+        for i in {1..10}; do
+          curl -f -X POST ${{ env.API_URL }}/predict \
+            -H "Content-Type: application/json" \
+            -d '{"PULocationID": 1, "DOLocationID": 2, "trip_distance": 5.0}' || exit 1
+        done
+        
+    - name: Output production URL
+      run: |
+        echo "🚀 Production API deployed successfully!"
+        echo "📍 API URL: ${{ env.API_URL }}"
+        echo "🔗 Health Check: ${{ env.API_URL }}/health"
+        echo "🔗 Prediction Endpoint: ${{ env.API_URL }}/predict"
+        
+    - name: Notify deployment success
+      if: success()
+      run: |
+        echo "✅ Production deployment successful!"
+        # Add Slack/email notification here
+
+  # ================================ Security Scan ================================
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: ${{ needs.build-and-push.outputs.image }}
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+        
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+  # ================================ Performance Testing ================================
+  performance-test:
+    name: Performance Testing
+    runs-on: ubuntu-latest
+    needs: deploy-dev
+    if: github.ref == 'refs/heads/dev'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+        
+    - name: Install dependencies
+      run: |
+        pip install locust
+        
+    - name: Create performance test file
+      run: |
+        mkdir -p tests/performance
+        cat > tests/performance/locustfile.py << 'EOF'
+        from locust import HttpUser, task, between
+        
+        class TaxiPredictionUser(HttpUser):
+            wait_time = between(1, 3)
+            
+            @task(3)
+            def health_check(self):
+                self.client.get("/health")
+            
+            @task(7)
+            def predict_trip(self):
+                payload = {
+                    "PULocationID": 1,
+                    "DOLocationID": 2,
+                    "trip_distance": 5.0
+                }
+                self.client.post("/predict", json=payload)
+        EOF
+        
+    - name: Run load test
+      run: |
+        locust -f tests/performance/locustfile.py \
+          --host=${{ env.API_URL }} \
+          --users=10 \
+          --spawn-rate=2 \
+          --run-time=60s \
+          --headless \
+          --html=load-test-report.html
+          
+    - name: Upload performance report
+      uses: actions/upload-artifact@v3
+      with:
+        name: performance-report
+        path: load-test-report.html 
