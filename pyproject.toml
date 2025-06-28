@@ -23,6 +23,8 @@ dependencies = [
     "pyarrow>=19.0.1",
     "fastparquet>=2024.11.0",
     "pytest>=8.3.5",
+    "pytest-cov>=4.1.0",
+    "coverage>=7.4.0",
     "mangum>=0.17.0"
 ]
 

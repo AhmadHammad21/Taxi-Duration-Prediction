@@ -59,7 +59,7 @@ jobs:
         
     - name: Install dependencies
       run: |
-        uv sync --no-dev
+        uv sync
         
     # - name: Run linting
     #   run: |
