@@ -4,7 +4,7 @@ on:
   push:
     branches: [ main, dev ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, dev ]
   workflow_dispatch:
     inputs:
       environment:
@@ -15,6 +15,20 @@ on:
         options:
         - dev
         - prod
+      action:
+        description: 'What action to perform'
+        required: true
+        default: 'deploy'
+        type: choice
+        options:
+        - deploy
+        - test-only
+        - train-only
+      force_deploy:
+        description: 'Force deployment even if tests fail'
+        required: false
+        default: false
+        type: boolean
 
 env:
   AWS_REGION: us-east-1
@@ -91,7 +105,9 @@ jobs:
     name: Model Training & Validation
     runs-on: ubuntu-latest
     needs: code-quality
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev' || github.event_name == 'workflow_dispatch'
+    if: |
+      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev' || github.event_name == 'workflow_dispatch') &&
+      (github.event_name != 'workflow_dispatch' || github.event.inputs.action == 'deploy' || github.event.inputs.action == 'train-only')
     
     steps:
     - name: Checkout code
@@ -152,7 +168,9 @@ jobs:
     name: Build & Push Lambda Container
     runs-on: ubuntu-latest
     needs: [code-quality, model-training]
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev' || github.event_name == 'workflow_dispatch'
+    if: |
+      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev' || github.event_name == 'workflow_dispatch') &&
+      (github.event_name != 'workflow_dispatch' || github.event.inputs.action == 'deploy')
     
     steps:
     - name: Checkout code
@@ -196,7 +214,10 @@ jobs:
     name: Deploy to Development
     runs-on: ubuntu-latest
     needs: build-and-push
-    if: github.ref == 'refs/heads/dev' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'dev')
+    if: |
+      (github.ref == 'refs/heads/dev' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'dev')) &&
+      (github.event_name != 'workflow_dispatch' || github.event.inputs.action == 'deploy') &&
+      (github.event.inputs.force_deploy != 'true' || needs.code-quality.result == 'success')
     environment: development
     
     steps:
@@ -319,7 +340,10 @@ jobs:
     name: Deploy to Production
     runs-on: ubuntu-latest
     needs: build-and-push
-    if: github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'prod')
+    if: |
+      (github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'prod')) &&
+      (github.event_name != 'workflow_dispatch' || github.event.inputs.action == 'deploy') &&
+      (github.event.inputs.force_deploy != 'true' || needs.code-quality.result == 'success')
     environment: production
     
     steps:
@@ -473,7 +497,9 @@ jobs:
     name: Performance Testing
     runs-on: ubuntu-latest
     needs: deploy-dev
-    if: github.ref == 'refs/heads/dev'
+    if: |
+      (github.ref == 'refs/heads/dev' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'dev')) &&
+      (github.event_name != 'workflow_dispatch' || github.event.inputs.action == 'deploy')
     
     steps:
     - name: Checkout code
