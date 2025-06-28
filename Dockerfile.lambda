@@ -1,0 +1,29 @@
+# Use AWS Lambda Python 3.12 base image
+FROM public.ecr.aws/lambda/python:3.12
+
+# Set working directory
+WORKDIR ${LAMBDA_TASK_ROOT}
+
+# Copy requirements and install dependencies
+COPY pyproject.toml uv.lock ./
+
+# Install uv and dependencies
+RUN pip install uv
+RUN uv sync --no-dev --frozen
+
+# Copy source code
+COPY src/ ./src/
+
+# Copy model artifacts (these will be downloaded during training)
+COPY src/artifacts/ ./src/artifacts/
+
+# Copy Lambda handler
+COPY lambda_handler.py ./
+
+# Set environment variables
+ENV PYTHONPATH="${LAMBDA_TASK_ROOT}"
+ENV APP_ENV="production"
+ENV LOG_LEVEL="INFO"
+
+# Set the Lambda handler
+CMD ["lambda_handler.lambda_handler"] 
