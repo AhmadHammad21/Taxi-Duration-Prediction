@@ -242,6 +242,70 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ env.AWS_REGION }}
         
+    - name: Create IAM roles for Lambda
+      run: |
+        # Get AWS account ID
+        ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+        
+        # Create Lambda execution role if it doesn't exist
+        if ! aws iam get-role --role-name lambda-execution-role 2>/dev/null; then
+          # Create the role
+          aws iam create-role \
+            --role-name lambda-execution-role \
+            --assume-role-policy-document '{
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Principal": {
+                    "Service": "lambda.amazonaws.com"
+                  },
+                  "Action": "sts:AssumeRole"
+                }
+              ]
+            }'
+          
+          # Create custom policy for Lambda permissions
+          aws iam put-role-policy \
+            --role-name lambda-execution-role \
+            --policy-name lambda-custom-policy \
+            --policy-document '{
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogGroup",
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": "arn:aws:logs:*:*:*"
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "ecr:GetAuthorizationToken",
+                    "ecr:BatchCheckLayerAvailability",
+                    "ecr:GetDownloadUrlForLayer",
+                    "ecr:BatchGetImage"
+                  ],
+                  "Resource": "*"
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "lambda:InvokeFunction"
+                  ],
+                  "Resource": "*"
+                }
+              ]
+            }'
+          
+          echo "Created lambda-execution-role with custom policy"
+        else
+          echo "lambda-execution-role already exists"
+        fi
+        
     - name: Create Lambda function for development
       run: |
         # Get AWS account ID
@@ -370,6 +434,70 @@ jobs:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ env.AWS_REGION }}
+        
+    - name: Create IAM roles for Lambda
+      run: |
+        # Get AWS account ID
+        ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+        
+        # Create Lambda execution role if it doesn't exist
+        if ! aws iam get-role --role-name lambda-execution-role 2>/dev/null; then
+          # Create the role
+          aws iam create-role \
+            --role-name lambda-execution-role \
+            --assume-role-policy-document '{
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Principal": {
+                    "Service": "lambda.amazonaws.com"
+                  },
+                  "Action": "sts:AssumeRole"
+                }
+              ]
+            }'
+          
+          # Create custom policy for Lambda permissions
+          aws iam put-role-policy \
+            --role-name lambda-execution-role \
+            --policy-name lambda-custom-policy \
+            --policy-document '{
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogGroup",
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": "arn:aws:logs:*:*:*"
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "ecr:GetAuthorizationToken",
+                    "ecr:BatchCheckLayerAvailability",
+                    "ecr:GetDownloadUrlForLayer",
+                    "ecr:BatchGetImage"
+                  ],
+                  "Resource": "*"
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "lambda:InvokeFunction"
+                  ],
+                  "Resource": "*"
+                }
+              ]
+            }'
+          
+          echo "Created lambda-execution-role with custom policy"
+        else
+          echo "lambda-execution-role already exists"
+        fi
         
     - name: Create Lambda function for production
       run: |

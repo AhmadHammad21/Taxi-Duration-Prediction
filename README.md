@@ -145,7 +145,7 @@ taxi-duration-prediction/
 - [ ] Modify Settings
 - ✅ Use loguro for logging
 - [ ] Data Version Control (DVC)
-- [ ] Add Workflow (CI/CD) GitHub Actions
+- ✅ Add Workflow (CI/CD) GitHub Actions
 - ✅ Docker / Docker Compose
 - [ ] Monitoring
 - [ ] Grafana / Prometheus
