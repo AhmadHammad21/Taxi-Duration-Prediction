@@ -162,7 +162,7 @@ taxi-duration-prediction/
 
 
 ## Time taken to build this project
-- 19 Hours
+- 25 Hours
 
 ## Contributing
 Anyone can contribute.
