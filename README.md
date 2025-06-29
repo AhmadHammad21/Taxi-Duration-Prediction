@@ -107,6 +107,13 @@ docker-compose down
 
 ## Images
 
+### CI/CD Pipeline
+
+![CI/CD Pipeline 1](images/ci_cd_workflow.png)
+
+![CI/CD Pipeline 2](images/workflow_options.png)
+
+
 ### MLflow UI
 
 ![MLflow UI](images/mlflow_ui.png)
