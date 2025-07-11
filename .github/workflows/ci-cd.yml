@@ -36,7 +36,8 @@ env:
   ECR_REPOSITORY_PROD: taxi-duration-prediction-prod
   LAMBDA_FUNCTION_DEV: taxi-prediction-dev
   LAMBDA_FUNCTION_PROD: taxi-prediction-prod
-  API_GATEWAY_NAME: Taxi Prediction API
+  API_GATEWAY_NAME_DEV: Taxi Prediction API Dev
+  API_GATEWAY_NAME_PROD: Taxi Prediction API Prod
   LAMBDA_ROLE_DEV: taxi-duration-prediction-dev
   LAMBDA_ROLE_PROD: taxi-duration-prediction-prod
 
@@ -244,90 +245,47 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ env.AWS_REGION }}
         
-    - name: Create Lambda function for development
-      run: |
-        # Get AWS account ID
-        ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-        
-        # Create Lambda function if it doesn't exist
-        if ! aws lambda get-function --function-name ${{ env.LAMBDA_FUNCTION_DEV }} 2>/dev/null; then
-          aws lambda create-function \
-            --function-name ${{ env.LAMBDA_FUNCTION_DEV }} \
-            --package-type Image \
-            --code ImageUri=${{ needs.build-and-push.outputs.image }} \
-            --role arn:aws:iam::$ACCOUNT_ID:role/${{ env.LAMBDA_ROLE_DEV }} \
-            --timeout 30 \
-            --memory-size 1024 \
-            --environment Variables="{APP_ENV=development,LOG_LEVEL=DEBUG}"
-        else
-          # Update existing function
-          aws lambda update-function-code \
-            --function-name ${{ env.LAMBDA_FUNCTION_DEV }} \
-            --image-uri ${{ needs.build-and-push.outputs.image }}
-        fi
-        
-    - name: Create API Gateway for development
+    - name: Create API Gateway for development (if not exists)
       run: |
         # Create API Gateway REST API if it doesn't exist
-        API_ID=$(aws apigateway create-rest-api --name "${{ env.API_GATEWAY_NAME }} - Dev" --description "Development API for taxi duration prediction" --query 'id' --output text 2>/dev/null || \
-        aws apigateway get-rest-apis --query 'items[?name==`'"${{ env.API_GATEWAY_NAME }}"' - Dev`].id' --output text)
+        API_ID=$(aws apigateway get-rest-apis --query 'items[?name==`"${{ env.API_GATEWAY_NAME_DEV }}"`].id' --output text)
+        if [ -z "$API_ID" ]; then
+          API_ID=$(aws apigateway create-rest-api --name "${{ env.API_GATEWAY_NAME_DEV }}" --description "Development API for taxi duration prediction" --query 'id' --output text)
+        fi
+        echo "API_ID=$API_ID" >> $GITHUB_ENV
+        echo "API_URL=https://$API_ID.execute-api.${{ env.AWS_REGION }}.amazonaws.com/dev" >> $GITHUB_ENV
         
         # Get root resource ID
         ROOT_ID=$(aws apigateway get-resources --rest-api-id $API_ID --query 'items[?path==`/`].id' --output text)
         
         # Create /predict resource
-        PREDICT_RESOURCE_ID=$(aws apigateway create-resource --rest-api-id $API_ID --parent-id $ROOT_ID --path-part "predict" --query 'id' --output text 2>/dev/null || \
-        aws apigateway get-resources --rest-api-id $API_ID --query 'items[?path==`/predict`].id' --output text)
+        PREDICT_RESOURCE_ID=$(aws apigateway get-resources --rest-api-id $API_ID --query 'items[?path==`/predict`].id' --output text)
+        if [ -z "$PREDICT_RESOURCE_ID" ]; then
+          PREDICT_RESOURCE_ID=$(aws apigateway create-resource --rest-api-id $API_ID --parent-id $ROOT_ID --path-part "predict" --query 'id' --output text)
+        fi
         
         # Create /health resource
-        HEALTH_RESOURCE_ID=$(aws apigateway create-resource --rest-api-id $API_ID --parent-id $ROOT_ID --path-part "health" --query 'id' --output text 2>/dev/null || \
-        aws apigateway get-resources --rest-api-id $API_ID --query 'items[?path==`/health`].id' --output text)
+        HEALTH_RESOURCE_ID=$(aws apigateway get-resources --rest-api-id $API_ID --query 'items[?path==`/health`].id' --output text)
+        if [ -z "$HEALTH_RESOURCE_ID" ]; then
+          HEALTH_RESOURCE_ID=$(aws apigateway create-resource --rest-api-id $API_ID --parent-id $ROOT_ID --path-part "health" --query 'id' --output text)
+        fi
         
         # Create POST method for /predict
-        aws apigateway put-method \
-          --rest-api-id $API_ID \
-          --resource-id $PREDICT_RESOURCE_ID \
-          --http-method POST \
-          --authorization-type NONE
-          
+        aws apigateway put-method --rest-api-id $API_ID --resource-id $PREDICT_RESOURCE_ID --http-method POST --authorization-type NONE || true
         # Create GET method for /health
-        aws apigateway put-method \
-          --rest-api-id $API_ID \
-          --resource-id $HEALTH_RESOURCE_ID \
-          --http-method GET \
-          --authorization-type NONE
-          
+        aws apigateway put-method --rest-api-id $API_ID --resource-id $HEALTH_RESOURCE_ID --http-method GET --authorization-type NONE || true
+        
         # Create Lambda integration for /predict
-        aws apigateway put-integration \
-          --rest-api-id $API_ID \
-          --resource-id $PREDICT_RESOURCE_ID \
-          --http-method POST \
-          --type AWS_PROXY \
-          --integration-http-method POST \
-          --uri arn:aws:apigateway:${{ env.AWS_REGION }}:lambda:path/2015-03-31/functions/arn:aws:lambda:${{ env.AWS_REGION }}:$ACCOUNT_ID:function:${{ env.LAMBDA_FUNCTION_DEV }}/invocations
-          
+        ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+        aws apigateway put-integration --rest-api-id $API_ID --resource-id $PREDICT_RESOURCE_ID --http-method POST --type AWS_PROXY --integration-http-method POST --uri arn:aws:apigateway:${{ env.AWS_REGION }}:lambda:path/2015-03-31/functions/arn:aws:lambda:${{ env.AWS_REGION }}:$ACCOUNT_ID:function:${{ env.LAMBDA_FUNCTION_DEV }}/invocations || true
         # Create Lambda integration for /health
-        aws apigateway put-integration \
-          --rest-api-id $API_ID \
-          --resource-id $HEALTH_RESOURCE_ID \
-          --http-method GET \
-          --type AWS_PROXY \
-          --integration-http-method POST \
-          --uri arn:aws:apigateway:${{ env.AWS_REGION }}:lambda:path/2015-03-31/functions/arn:aws:lambda:${{ env.AWS_REGION }}:$ACCOUNT_ID:function:${{ env.LAMBDA_FUNCTION_DEV }}/invocations
+        aws apigateway put-integration --rest-api-id $API_ID --resource-id $HEALTH_RESOURCE_ID --http-method GET --type AWS_PROXY --integration-http-method POST --uri arn:aws:apigateway:${{ env.AWS_REGION }}:lambda:path/2015-03-31/functions/arn:aws:lambda:${{ env.AWS_REGION }}:$ACCOUNT_ID:function:${{ env.LAMBDA_FUNCTION_DEV }}/invocations || true
         
         # Add Lambda permission for API Gateway
-        aws lambda add-permission \
-          --function-name ${{ env.LAMBDA_FUNCTION_DEV }} \
-          --statement-id apigateway-dev \
-          --action lambda:InvokeFunction \
-          --principal apigateway.amazonaws.com \
-          --source-arn "arn:aws:execute-api:${{ env.AWS_REGION }}:$ACCOUNT_ID:$API_ID/*/*/*" || true
+        aws lambda add-permission --function-name ${{ env.LAMBDA_FUNCTION_DEV }} --statement-id apigateway-dev --action lambda:InvokeFunction --principal apigateway.amazonaws.com --source-arn "arn:aws:execute-api:${{ env.AWS_REGION }}:$ACCOUNT_ID:$API_ID/*/*/*" || true
         
         # Deploy API
-        DEPLOYMENT_ID=$(aws apigateway create-deployment --rest-api-id $API_ID --stage-name dev --query 'id' --output text)
-        
-        echo "API_ID=$API_ID" >> $GITHUB_ENV
-        echo "API_URL=https://$API_ID.execute-api.${{ env.AWS_REGION }}.amazonaws.com/dev" >> $GITHUB_ENV
+        aws apigateway create-deployment --rest-api-id $API_ID --stage-name dev
         
     - name: Wait for Lambda function to be ready
       run: |
@@ -373,90 +331,47 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ env.AWS_REGION }}
         
-    - name: Create Lambda function for production
-      run: |
-        # Get AWS account ID
-        ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-        
-        # Create Lambda function if it doesn't exist
-        if ! aws lambda get-function --function-name ${{ env.LAMBDA_FUNCTION_PROD }} 2>/dev/null; then
-          aws lambda create-function \
-            --function-name ${{ env.LAMBDA_FUNCTION_PROD }} \
-            --package-type Image \
-            --code ImageUri=${{ needs.build-and-push.outputs.image }} \
-            --role arn:aws:iam::$ACCOUNT_ID:role/${{ env.LAMBDA_ROLE_PROD }} \
-            --timeout 30 \
-            --memory-size 2048 \
-            --environment Variables="{APP_ENV=production,LOG_LEVEL=INFO}"
-        else
-          # Update existing function
-          aws lambda update-function-code \
-            --function-name ${{ env.LAMBDA_FUNCTION_PROD }} \
-            --image-uri ${{ needs.build-and-push.outputs.image }}
-        fi
-        
-    - name: Create API Gateway for production
+    - name: Create API Gateway for production (if not exists)
       run: |
         # Create API Gateway REST API if it doesn't exist
-        API_ID=$(aws apigateway create-rest-api --name "${{ env.API_GATEWAY_NAME }} - Prod" --description "Production API for taxi duration prediction" --query 'id' --output text 2>/dev/null || \
-        aws apigateway get-rest-apis --query 'items[?name==`'"${{ env.API_GATEWAY_NAME }}"' - Prod`].id' --output text)
+        API_ID=$(aws apigateway get-rest-apis --query 'items[?name==`"${{ env.API_GATEWAY_NAME_PROD }}"`].id' --output text)
+        if [ -z "$API_ID" ]; then
+          API_ID=$(aws apigateway create-rest-api --name "${{ env.API_GATEWAY_NAME_PROD }}" --description "Production API for taxi duration prediction" --query 'id' --output text)
+        fi
+        echo "API_ID=$API_ID" >> $GITHUB_ENV
+        echo "API_URL=https://$API_ID.execute-api.${{ env.AWS_REGION }}.amazonaws.com/prod" >> $GITHUB_ENV
         
         # Get root resource ID
         ROOT_ID=$(aws apigateway get-resources --rest-api-id $API_ID --query 'items[?path==`/`].id' --output text)
         
         # Create /predict resource
-        PREDICT_RESOURCE_ID=$(aws apigateway create-resource --rest-api-id $API_ID --parent-id $ROOT_ID --path-part "predict" --query 'id' --output text 2>/dev/null || \
-        aws apigateway get-resources --rest-api-id $API_ID --query 'items[?path==`/predict`].id' --output text)
+        PREDICT_RESOURCE_ID=$(aws apigateway get-resources --rest-api-id $API_ID --query 'items[?path==`/predict`].id' --output text)
+        if [ -z "$PREDICT_RESOURCE_ID" ]; then
+          PREDICT_RESOURCE_ID=$(aws apigateway create-resource --rest-api-id $API_ID --parent-id $ROOT_ID --path-part "predict" --query 'id' --output text)
+        fi
         
         # Create /health resource
-        HEALTH_RESOURCE_ID=$(aws apigateway create-resource --rest-api-id $API_ID --parent-id $ROOT_ID --path-part "health" --query 'id' --output text 2>/dev/null || \
-        aws apigateway get-resources --rest-api-id $API_ID --query 'items[?path==`/health`].id' --output text)
+        HEALTH_RESOURCE_ID=$(aws apigateway get-resources --rest-api-id $API_ID --query 'items[?path==`/health`].id' --output text)
+        if [ -z "$HEALTH_RESOURCE_ID" ]; then
+          HEALTH_RESOURCE_ID=$(aws apigateway create-resource --rest-api-id $API_ID --parent-id $ROOT_ID --path-part "health" --query 'id' --output text)
+        fi
         
         # Create POST method for /predict
-        aws apigateway put-method \
-          --rest-api-id $API_ID \
-          --resource-id $PREDICT_RESOURCE_ID \
-          --http-method POST \
-          --authorization-type NONE
-          
+        aws apigateway put-method --rest-api-id $API_ID --resource-id $PREDICT_RESOURCE_ID --http-method POST --authorization-type NONE || true
         # Create GET method for /health
-        aws apigateway put-method \
-          --rest-api-id $API_ID \
-          --resource-id $HEALTH_RESOURCE_ID \
-          --http-method GET \
-          --authorization-type NONE
-          
+        aws apigateway put-method --rest-api-id $API_ID --resource-id $HEALTH_RESOURCE_ID --http-method GET --authorization-type NONE || true
+        
         # Create Lambda integration for /predict
-        aws apigateway put-integration \
-          --rest-api-id $API_ID \
-          --resource-id $PREDICT_RESOURCE_ID \
-          --http-method POST \
-          --type AWS_PROXY \
-          --integration-http-method POST \
-          --uri arn:aws:apigateway:${{ env.AWS_REGION }}:lambda:path/2015-03-31/functions/arn:aws:lambda:${{ env.AWS_REGION }}:$ACCOUNT_ID:function:${{ env.LAMBDA_FUNCTION_PROD }}/invocations
-          
+        ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+        aws apigateway put-integration --rest-api-id $API_ID --resource-id $PREDICT_RESOURCE_ID --http-method POST --type AWS_PROXY --integration-http-method POST --uri arn:aws:apigateway:${{ env.AWS_REGION }}:lambda:path/2015-03-31/functions/arn:aws:lambda:${{ env.AWS_REGION }}:$ACCOUNT_ID:function:${{ env.LAMBDA_FUNCTION_PROD }}/invocations || true
         # Create Lambda integration for /health
-        aws apigateway put-integration \
-          --rest-api-id $API_ID \
-          --resource-id $HEALTH_RESOURCE_ID \
-          --http-method GET \
-          --type AWS_PROXY \
-          --integration-http-method POST \
-          --uri arn:aws:apigateway:${{ env.AWS_REGION }}:lambda:path/2015-03-31/functions/arn:aws:lambda:${{ env.AWS_REGION }}:$ACCOUNT_ID:function:${{ env.LAMBDA_FUNCTION_PROD }}/invocations
+        aws apigateway put-integration --rest-api-id $API_ID --resource-id $HEALTH_RESOURCE_ID --http-method GET --type AWS_PROXY --integration-http-method POST --uri arn:aws:apigateway:${{ env.AWS_REGION }}:lambda:path/2015-03-31/functions/arn:aws:lambda:${{ env.AWS_REGION }}:$ACCOUNT_ID:function:${{ env.LAMBDA_FUNCTION_PROD }}/invocations || true
         
         # Add Lambda permission for API Gateway
-        aws lambda add-permission \
-          --function-name ${{ env.LAMBDA_FUNCTION_PROD }} \
-          --statement-id apigateway-prod \
-          --action lambda:InvokeFunction \
-          --principal apigateway.amazonaws.com \
-          --source-arn "arn:aws:execute-api:${{ env.AWS_REGION }}:$ACCOUNT_ID:$API_ID/*/*/*" || true
+        aws lambda add-permission --function-name ${{ env.LAMBDA_FUNCTION_PROD }} --statement-id apigateway-prod --action lambda:InvokeFunction --principal apigateway.amazonaws.com --source-arn "arn:aws:execute-api:${{ env.AWS_REGION }}:$ACCOUNT_ID:$API_ID/*/*/*" || true
         
         # Deploy API
-        DEPLOYMENT_ID=$(aws apigateway create-deployment --rest-api-id $API_ID --stage-name prod --query 'id' --output text)
-        
-        echo "API_ID=$API_ID" >> $GITHUB_ENV
-        echo "API_URL=https://$API_ID.execute-api.${{ env.AWS_REGION }}.amazonaws.com/prod" >> $GITHUB_ENV
+        aws apigateway create-deployment --rest-api-id $API_ID --stage-name prod
         
     - name: Wait for Lambda function to be ready
       run: |
