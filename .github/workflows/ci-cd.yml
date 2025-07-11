@@ -244,7 +244,13 @@ jobs:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ env.AWS_REGION }}
-        
+
+    - name: Update Lambda function to latest image
+      run: |
+        aws lambda update-function-code \
+          --function-name ${{ env.LAMBDA_FUNCTION_DEV }} \
+          --image-uri ${{ needs.build-and-push.outputs.image }}
+
     - name: Create API Gateway for development (if not exists)
       run: |
         # Create API Gateway REST API if it doesn't exist
@@ -330,7 +336,13 @@ jobs:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ env.AWS_REGION }}
-        
+
+    - name: Update Lambda function to latest image
+      run: |
+        aws lambda update-function-code \
+          --function-name ${{ env.LAMBDA_FUNCTION_PROD }} \
+          --image-uri ${{ needs.build-and-push.outputs.image }}
+
     - name: Create API Gateway for production (if not exists)
       run: |
         # Create API Gateway REST API if it doesn't exist
