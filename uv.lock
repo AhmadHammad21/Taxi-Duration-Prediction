@@ -913,18 +913,6 @@ wheels = [
 ]
 
 [[package]]
-name = "mangum"
-version = "0.19.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "typing-extensions" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/97/e0/6ee9bfa27226252a449cba12fc57d3f1c3ce661813377ab33e29245389a4/mangum-0.19.0.tar.gz", hash = "sha256:e388e7c491b7b67970f8234e46fd4a7b21ff87785848f418de08148f71cf0bd6", size = 85792 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/77/ec/dd1cae5f6b1b4a08c01de587b45e889036b2f8c06408621e0cb273909965/mangum-0.19.0-py3-none-any.whl", hash = "sha256:e500b35f495d5e68ac98bc97334896d6101523f2ee2c57ba6a61893b65266e59", size = 17083 },
-]
-
-[[package]]
 name = "markdown"
 version = "3.8"
 source = { registry = "https://pypi.org/simple" }
@@ -1856,7 +1844,6 @@ dependencies = [
     { name = "fastparquet" },
     { name = "lightgbm" },
     { name = "loguru" },
-    { name = "mangum" },
     { name = "matplotlib" },
     { name = "mlflow" },
     { name = "numpy" },
@@ -1886,7 +1873,6 @@ requires-dist = [
     { name = "ipykernel", marker = "extra == 'dev'", specifier = ">=6.29.5" },
     { name = "lightgbm", specifier = ">=4.6.0" },
     { name = "loguru", specifier = ">=0.7.2" },
-    { name = "mangum", specifier = ">=0.17.0" },
     { name = "matplotlib", specifier = ">=3.10.1" },
     { name = "mlflow", specifier = ">=2.22.0" },
     { name = "numpy", specifier = ">=2.2.5" },
