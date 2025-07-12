@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 from .features.feature_pipeline import FeatureEngineer
 from .inference.predict import ModelPredictor
 from .utils.logging_config import setup_logging
+from mangum import Mangum
 
 
 @asynccontextmanager
@@ -22,3 +23,5 @@ app = FastAPI(lifespan=lifespan)
 
 app.include_router(base.base_router)
 app.include_router(taxi.taxi_router)
+
+handler = Mangum(app)  # This is the AWS Lambda handler
