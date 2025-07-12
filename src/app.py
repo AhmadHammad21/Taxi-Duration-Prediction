@@ -28,3 +28,7 @@ app.include_router(taxi.taxi_router)
 
 handler = Mangum(app)  # This is the AWS Lambda handler
 
+# AWS Lambda handler function
+def lambda_handler(event, context):
+    return handler(event, context)
+
