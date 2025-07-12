@@ -10,3 +10,4 @@ xgboost>=3.0.0
 requests>=2.32.3
 pyarrow>=19.0.1 
 mlflow>=2.22.0
+mangum>=0.19.0
