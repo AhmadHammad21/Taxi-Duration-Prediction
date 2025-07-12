@@ -57,6 +57,9 @@ class ModelPredictor:
     """
 
     def __init__(self, feature_engineer):
+        
+        print(os.listdir())
+        logger.info(f"os.listdir(): {os.listdir()}")
         # Load the model directly within the class from the load_best_model function
         try:
             if os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
