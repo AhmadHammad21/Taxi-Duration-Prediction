@@ -23,4 +23,4 @@ ENV APP_ENV="production"
 ENV LOG_LEVEL="INFO"
 
 # Set the Lambda handler
-CMD ["src.app:handler"] 
+CMD ["src.app.handler"] 
