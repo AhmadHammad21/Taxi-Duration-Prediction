@@ -1,6 +1,6 @@
+import os
 from loguru import logger
 import sys
-import os
 try:
     from config.settings import settings
 except ImportError:
@@ -9,6 +9,8 @@ except ImportError:
 
 def setup_logging():
     logger.remove()  # Remove default logger
+
+    # Always log to stderr (console)
     logger.add(
         sys.stderr,
         level=settings.LOG_LEVEL,
@@ -16,21 +18,18 @@ def setup_logging():
         colorize=True,
     )
 
-    if os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
-        LOG_FILE = "/tmp/logs/app.log"
-    else:
-        LOG_FILE = "logs/app.log"
-
-    logger.add(
-        LOG_FILE,
-        level=settings.LOG_LEVEL,
-        format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function}:{line} - {message}",
-        rotation="10 MB",  # Rotate log file when it reaches 10 MB
-        retention="7 days",  # Keep logs for 7 days
-        enqueue=True,  # Make logging thread-safe
-        backtrace=True,  # Show full stack trace on exceptions
-        diagnose=True,  # Add exception variable values
-    )
+    # Only add file logging if NOT running in Lambda
+    if not os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
+        logger.add(
+            "logs/app.log",
+            level=settings.LOG_LEVEL,
+            format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function}:{line} - {message}",
+            rotation="10 MB",
+            retention="7 days",
+            enqueue=True,
+            backtrace=True,
+            diagnose=True,
+        )
 
 
 def get_logger():
