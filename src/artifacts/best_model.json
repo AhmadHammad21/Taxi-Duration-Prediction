@@ -1,5 +1,5 @@
 {
-    "model_name": "ambitious-trout-584",
-    "run_id": "9172fc874bfd473e9908e6d19d3052ee",
-    "test_mean_absolute_error": 3.9370544090572275
+    "model_name": "LinearRegression",
+    "run_id": "0be10ad7967d4518b7f7973f53966e2f",
+    "test_mean_absolute_error": 4.2
 }
