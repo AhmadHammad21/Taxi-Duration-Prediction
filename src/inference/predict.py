@@ -31,10 +31,8 @@ def load_best_model_local():
 def load_best_model():
     # Set tracking URI based on environment
     if os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
-        # In Lambda, disable MLflow tracking entirely
-        mlflow.set_tracking_uri("")
-        # Disable MLflow tracing to avoid filesystem issues
-        os.environ["MLFLOW_TRACKING_DISABLE"] = "true"
+        # In Lambda, use a dummy tracking URI for inference
+        mlflow.set_tracking_uri("file:///tmp/mlflow")
     else:
         mlflow.set_tracking_uri("sqlite:///mlflow.db")
     
