@@ -13,8 +13,9 @@ RUN pip install -r requirements-lambda.txt
 # Copy source code
 COPY src/ ./src/
 
-# Copy model artifacts (these will be downloaded during training)
+# Copy model artifacts and MLflow runs
 COPY src/artifacts/ ./src/artifacts/
+COPY mlruns/ ./mlruns/
 
 
 # Set environment variables

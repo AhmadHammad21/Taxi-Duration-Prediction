@@ -59,9 +59,15 @@ class ModelPredictor:
     def __init__(self, feature_engineer):
         # Load the model directly within the class from the load_best_model function
         try:
-            self.model = load_best_model()  # This dynamically loads the model
+            if os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
+                # In Lambda, use local path approach
+                self.model = load_best_model_local()
+            else:
+                # Locally, use MLflow tracking approach
+                self.model = load_best_model()
         except Exception as e:
             logger.error(f"Error in ModelPredictor: {str(e)}")
+            # Fallback to local approach
             self.model = load_best_model_local()
         self.feature_engineer = feature_engineer
 
