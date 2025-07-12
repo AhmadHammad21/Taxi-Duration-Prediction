@@ -16,8 +16,6 @@ COPY src/ ./src/
 # Copy model artifacts (these will be downloaded during training)
 COPY src/artifacts/ ./src/artifacts/
 
-# Copy Lambda handler
-COPY lambda_handler.py ./
 
 # Set environment variables
 ENV PYTHONPATH="${LAMBDA_TASK_ROOT}"
