@@ -1,5 +1,6 @@
 from loguru import logger
 import sys
+import os
 try:
     from config.settings import settings
 except ImportError:
@@ -14,8 +15,14 @@ def setup_logging():
         format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
         colorize=True,
     )
+
+    if os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
+        LOG_FILE = "/tmp/logs/app.log"
+    else:
+        LOG_FILE = "logs/app.log"
+
     logger.add(
-        settings.LOG_FILE,
+        LOG_FILE,
         level=settings.LOG_LEVEL,
         format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function}:{line} - {message}",
         rotation="10 MB",  # Rotate log file when it reaches 10 MB
