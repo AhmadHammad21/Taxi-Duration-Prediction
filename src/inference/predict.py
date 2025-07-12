@@ -29,7 +29,12 @@ def load_best_model_local():
 
 
 def load_best_model():
-    mlflow.set_tracking_uri("sqlite:///mlflow.db")
+    # Set tracking URI based on environment
+    if os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
+        # In Lambda, use a dummy tracking URI for inference
+        mlflow.set_tracking_uri("file:///tmp/mlflow")
+    else:
+        mlflow.set_tracking_uri("sqlite:///mlflow.db")
     
     # mlflow.set_tracking_uri("http://mlflow:5000")
 
@@ -52,11 +57,20 @@ class ModelPredictor:
     """
 
     def __init__(self, feature_engineer):
+        
+        print(os.listdir())
+        logger.info(f"os.listdir(): {os.listdir()}")
         # Load the model directly within the class from the load_best_model function
         try:
-            self.model = load_best_model()  # This dynamically loads the model
+            if os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
+                # In Lambda, use local path approach
+                self.model = load_best_model_local()
+            else:
+                # Locally, use MLflow tracking approach
+                self.model = load_best_model()
         except Exception as e:
             logger.error(f"Error in ModelPredictor: {str(e)}")
+            # Fallback to local approach
             self.model = load_best_model_local()
         self.feature_engineer = feature_engineer
 
