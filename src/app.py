@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 # from config.config import config
 # from config.settings import settings
 from .features.feature_pipeline import FeatureEngineer
-from .inference.predict import ModelPredictor
+from .inference.simple_predict import SimpleModelPredictor
 from .utils.logging_config import setup_logging
 from mangum import Mangum
 import os
@@ -15,7 +15,7 @@ import sys
 async def lifespan(app: FastAPI):
     setup_logging()
     app.state.feature_engineer = FeatureEngineer()
-    app.state.model_predictor = ModelPredictor(
+    app.state.model_predictor = SimpleModelPredictor(
         feature_engineer=app.state.feature_engineer
     )
     yield
