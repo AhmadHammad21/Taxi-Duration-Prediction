@@ -47,7 +47,8 @@ jobs:
             # Sync dependencies
             uv sync
 
-            # Docker steps (with sudo)
+            # Docker steps (with BuildKit enabled)
+            export DOCKER_BUILDKIT=1
             sudo docker-compose pull
             sudo docker-compose up --build -d
           EOF
