@@ -5,20 +5,18 @@ FROM public.ecr.aws/lambda/python:3.12
 WORKDIR ${LAMBDA_TASK_ROOT}
 
 # Copy requirements and install dependencies
-COPY pyproject.toml uv.lock ./
+COPY requirements-lambda.txt ./
 
-# Install uv and dependencies
-RUN pip install uv
-RUN uv sync --no-dev --frozen
+# Install dependencies using pip
+RUN pip install -r requirements-lambda.txt
 
 # Copy source code
 COPY src/ ./src/
 
-# Copy model artifacts (these will be downloaded during training)
+# Copy model artifacts and MLflow runs
 COPY src/artifacts/ ./src/artifacts/
+COPY mlruns/ ./mlruns/
 
-# Copy Lambda handler
-COPY lambda_handler.py ./
 
 # Set environment variables
 ENV PYTHONPATH="${LAMBDA_TASK_ROOT}"
@@ -26,4 +24,5 @@ ENV APP_ENV="production"
 ENV LOG_LEVEL="INFO"
 
 # Set the Lambda handler
-CMD ["lambda_handler.lambda_handler"] 
+CMD ["src.app.handler"]
+# CMD ["src.app.lambda_handler"]  

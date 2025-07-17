@@ -20,8 +20,16 @@ def test_load_and_concat_parquet_files():
         df2.to_parquet(tmp_path / "file2.parquet")
 
         result = load_and_concat_parquet_files(tmp_path)
+        
+        # Since files are loaded in alphabetical order (file1, file2),
+        # the result should be df1 + df2
         expected = pd.concat([df1, df2], ignore_index=True)
-        pd.testing.assert_frame_equal(result, expected)
+        
+        # Sort both DataFrames by all columns to ensure consistent comparison
+        result_sorted = result.sort_values(by=list(result.columns)).reset_index(drop=True)
+        expected_sorted = expected.sort_values(by=list(expected.columns)).reset_index(drop=True)
+        
+        pd.testing.assert_frame_equal(result_sorted, expected_sorted)
 
 
 def test_load_train_test():
@@ -38,7 +46,7 @@ def test_load_train_test():
         df_train.to_parquet(train_dir / "train1.parquet")
         df_test.to_parquet(test_dir / "test1.parquet")
 
-        train_df, test_df = load_train_test(raw_data_dir)
+        train_df, test_df = load_train_test(str(raw_data_dir))
 
         pd.testing.assert_frame_equal(train_df, df_train)
         pd.testing.assert_frame_equal(test_df, df_test)

@@ -40,27 +40,162 @@ This guide covers the deployment of the NYC Taxi Duration Prediction service to 
    - CloudWatch Logs
    - IAM (for roles and policies)
 
-3. **IAM Roles and Policies**
-   
-   Create the following IAM role:
-   
-   **Lambda Execution Role** (`lambda-execution-role`):
-   ```json
-   {
-     "Version": "2012-10-17",
-     "Statement": [
-       {
-         "Effect": "Allow",
-         "Action": [
-           "logs:CreateLogGroup",
-           "logs:CreateLogStream",
-           "logs:PutLogEvents"
-         ],
-         "Resource": "arn:aws:logs:*:*:*"
-       }
-     ]
-   }
-   ```
+### IAM Roles and Permissions
+
+The CI/CD pipeline automatically creates the necessary IAM roles, but you can also create them manually if needed.
+
+#### Required IAM Role: `lambda-execution-role`
+
+This role is used by both development and production Lambda functions.
+
+**Trust Policy (allows Lambda to assume the role):**
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "lambda.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+```
+
+**Custom Policy (`lambda-custom-policy`):**
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ],
+      "Resource": "arn:aws:logs:*:*:*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ecr:GetAuthorizationToken",
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:GetDownloadUrlForLayer",
+        "ecr:BatchGetImage"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "lambda:InvokeFunction"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+```
+
+#### Manual IAM Role Creation
+
+If you need to create the IAM role manually, run these commands:
+
+```bash
+# Get your AWS account ID
+ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+
+# Create the role
+aws iam create-role \
+  --role-name lambda-execution-role \
+  --assume-role-policy-document '{
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Principal": {
+          "Service": "lambda.amazonaws.com"
+        },
+        "Action": "sts:AssumeRole"
+      }
+    ]
+  }'
+
+# Create custom policy
+aws iam put-role-policy \
+  --role-name lambda-execution-role \
+  --policy-name lambda-custom-policy \
+  --policy-document '{
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Action": [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ],
+        "Resource": "arn:aws:logs:*:*:*"
+      },
+      {
+        "Effect": "Allow",
+        "Action": [
+          "ecr:GetAuthorizationToken",
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage"
+        ],
+        "Resource": "*"
+      },
+      {
+        "Effect": "Allow",
+        "Action": [
+          "lambda:InvokeFunction"
+        ],
+        "Resource": "*"
+      }
+    ]
+  }'
+```
+
+#### GitHub Actions IAM Permissions
+
+The GitHub Actions workflow needs the following AWS permissions:
+
+**IAM Permissions:**
+- `iam:CreateRole`
+- `iam:PutRolePolicy`
+- `iam:GetRole`
+
+**Lambda Permissions:**
+- `lambda:CreateFunction`
+- `lambda:UpdateFunctionCode`
+- `lambda:GetFunction`
+- `lambda:AddPermission`
+- `lambda:WaitFunctionUpdated`
+
+**ECR Permissions:**
+- `ecr:CreateRepository`
+- `ecr:DescribeRepositories`
+- `ecr:GetAuthorizationToken`
+- `ecr:BatchCheckLayerAvailability`
+- `ecr:GetDownloadUrlForLayer`
+- `ecr:BatchGetImage`
+- `ecr:InitiateLayerUpload`
+- `ecr:UploadLayerPart`
+- `ecr:CompleteLayerUpload`
+- `ecr:PutImage`
+
+**API Gateway Permissions:**
+- `apigateway:CreateRestApi`
+- `apigateway:GetRestApis`
+- `apigateway:GetResources`
+- `apigateway:CreateResource`
+- `apigateway:PutMethod`
+- `apigateway:PutIntegration`
+- `apigateway:CreateDeployment`
 
 ### GitHub Secrets Setup
 
@@ -94,12 +229,12 @@ Add the following secrets to your GitHub repository:
 
 1. **Create Development Branch**
    ```bash
-   git checkout -b develop
-   git push origin develop
+   git checkout -b dev
+   git push origin dev
    ```
 
 2. **Trigger Development Deployment**
-   - The CI/CD pipeline will automatically deploy to development when you push to the `develop` branch
+   - The CI/CD pipeline will automatically deploy to development when you push to the `dev` branch
    - Or manually trigger via GitHub Actions with environment set to "dev"
 
 3. **Verify Deployment**
@@ -131,7 +266,7 @@ Add the following secrets to your GitHub repository:
 1. **Merge to Main Branch**
    ```bash
    git checkout main
-   git merge develop
+   git merge dev
    git push origin main
    ```
 
@@ -483,3 +618,257 @@ sam local start-api
 ---
 
 For additional support or questions, please refer to the project documentation or create an issue in the repository. 
+
+## Prerequisites
+
+1. **AWS Account** with appropriate permissions
+2. **GitHub Repository** with the code
+3. **AWS Credentials** configured as GitHub Secrets:
+   - `AWS_ACCESS_KEY_ID`
+   - `AWS_SECRET_ACCESS_KEY`
+
+## Required AWS Permissions
+
+The GitHub Actions workflow needs the following AWS permissions:
+
+### IAM Permissions
+- `iam:CreateRole`
+- `iam:PutRolePolicy`
+- `iam:GetRole`
+- `iam:AttachRolePolicy`
+
+### Lambda Permissions
+- `lambda:CreateFunction`
+- `lambda:UpdateFunctionCode`
+- `lambda:GetFunction`
+- `lambda:AddPermission`
+- `lambda:WaitFunctionUpdated`
+
+### ECR Permissions
+- `ecr:CreateRepository`
+- `ecr:DescribeRepositories`
+- `ecr:GetAuthorizationToken`
+- `ecr:BatchCheckLayerAvailability`
+- `ecr:GetDownloadUrlForLayer`
+- `ecr:BatchGetImage`
+- `ecr:InitiateLayerUpload`
+- `ecr:UploadLayerPart`
+- `ecr:CompleteLayerUpload`
+- `ecr:PutImage`
+
+### API Gateway Permissions
+- `apigateway:CreateRestApi`
+- `apigateway:GetRestApis`
+- `apigateway:GetResources`
+- `apigateway:CreateResource`
+- `apigateway:PutMethod`
+- `apigateway:PutIntegration`
+- `apigateway:CreateDeployment`
+
+### CloudWatch Logs Permissions
+- `logs:CreateLogGroup`
+- `logs:CreateLogStream`
+- `logs:PutLogEvents`
+
+## IAM Roles Created Automatically
+
+The CI/CD pipeline automatically creates the following IAM role:
+
+### `lambda-execution-role`
+This role is used by both dev and prod Lambda functions and includes:
+
+**Trust Policy:**
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "lambda.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+```
+
+**Custom Policy (`lambda-custom-policy`):**
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ],
+      "Resource": "arn:aws:logs:*:*:*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ecr:GetAuthorizationToken",
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:GetDownloadUrlForLayer",
+        "ecr:BatchGetImage"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "lambda:InvokeFunction"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+```
+
+## Manual IAM Role Creation (if needed)
+
+If you need to create the IAM role manually, run these commands:
+
+```bash
+# Get your AWS account ID
+ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+
+# Create the role
+aws iam create-role \
+  --role-name lambda-execution-role \
+  --assume-role-policy-document '{
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Principal": {
+          "Service": "lambda.amazonaws.com"
+        },
+        "Action": "sts:AssumeRole"
+      }
+    ]
+  }'
+
+# Create custom policy
+aws iam put-role-policy \
+  --role-name lambda-execution-role \
+  --policy-name lambda-custom-policy \
+  --policy-document '{
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Action": [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ],
+        "Resource": "arn:aws:logs:*:*:*"
+      },
+      {
+        "Effect": "Allow",
+        "Action": [
+          "ecr:GetAuthorizationToken",
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage"
+        ],
+        "Resource": "*"
+      },
+      {
+        "Effect": "Allow",
+        "Action": [
+          "lambda:InvokeFunction"
+        ],
+        "Resource": "*"
+      }
+    ]
+  }'
+```
+
+## Deployment Process
+
+### Automatic Deployment
+
+1. **Push to dev branch** → Deploys to development environment
+2. **Push to main branch** → Deploys to production environment
+3. **Manual trigger** → Choose environment and action
+
+### Manual Deployment
+
+1. Go to GitHub Actions tab
+2. Select "Deploy Taxi Prediction API" workflow
+3. Click "Run workflow"
+4. Choose:
+   - **Environment**: `dev` or `prod`
+   - **Action**: `deploy`, `test-only`, or `train-only`
+   - **Force Deploy**: `true` to skip quality checks
+
+## Architecture
+
+```
+Client Request → API Gateway → Lambda Function → Response
+                     ↓
+              Container Image (ECR)
+                     ↓
+              FastAPI + ML Model
+```
+
+### Components
+
+1. **ECR Repositories**:
+   - `taxi-duration-prediction-dev` (development)
+   - `taxi-duration-prediction-prod` (production)
+
+2. **Lambda Functions**:
+   - `taxi-prediction-dev` (development)
+   - `taxi-prediction-prod` (production)
+
+3. **API Gateway**:
+   - Separate APIs for dev and prod
+   - Endpoints: `/health`, `/predict`
+
+## Testing
+
+### Health Check
+```bash
+curl https://your-api-id.execute-api.region.amazonaws.com/dev/health
+```
+
+### Prediction
+```bash
+curl -X POST https://your-api-id.execute-api.region.amazonaws.com/dev/predict \
+  -H "Content-Type: application/json" \
+  -d '{"PULocationID": 1, "DOLocationID": 2, "trip_distance": 5.0}'
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **IAM Role Error**: Ensure the `lambda-execution-role` exists and has proper permissions
+2. **ECR Access Error**: Check that Lambda has ECR read permissions
+3. **API Gateway Error**: Verify Lambda permissions for API Gateway invocation
+4. **Cold Start**: First request may be slow due to container initialization
+
+### Logs
+
+- **Lambda Logs**: CloudWatch Logs `/aws/lambda/taxi-prediction-dev` or `/aws/lambda/taxi-prediction-prod`
+- **API Gateway Logs**: CloudWatch Logs for API Gateway execution
+
+## Cost Optimization
+
+- **Lambda**: Pay per request (100ms increments)
+- **API Gateway**: Pay per request
+- **ECR**: Pay for storage and data transfer
+- **CloudWatch**: Pay for logs storage and ingestion
+
+## Security
+
+- **No authentication** configured by default
+- **CORS** enabled for all origins
+- **Environment variables** for configuration
+- **IAM roles** with minimal required permissions 

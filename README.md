@@ -107,6 +107,13 @@ docker-compose down
 
 ## Images
 
+### CI/CD Pipeline
+
+![CI/CD Pipeline 1](images/ci_cd_workflow.png)
+
+![CI/CD Pipeline 2](images/workflow_options.png)
+
+
 ### MLflow UI
 
 ![MLflow UI](images/mlflow_ui.png)
@@ -145,17 +152,20 @@ taxi-duration-prediction/
 - [ ] Modify Settings
 - ✅ Use loguro for logging
 - [ ] Data Version Control (DVC)
-- [ ] Add Workflow (CI/CD) GitHub Actions
+- ✅ Add Workflow (CI/CD) GitHub Actions
 - ✅ Docker / Docker Compose
+- [ ] Deployment Option 1: AWS Lambda + API Gateway 
+- [ ] Deployment Option 2: EC2 Server
+- [ ] Deployment Option 3: ECs + Fargate
 - [ ] Monitoring
 - [ ] Grafana / Prometheus
 - [ ] Add Kubernetes
 - [ ] Add diagram of project flow
-- [ ] Move the data to the cloud
+- [ ] Move the data and evrything to the cloud
 
 
 ## Time taken to build this project
-- 19 Hours
+- 25 Hours
 
 ## Contributing
 Anyone can contribute.
