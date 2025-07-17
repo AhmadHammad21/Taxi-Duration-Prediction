@@ -47,8 +47,13 @@ jobs:
             # Sync dependencies
             uv sync
 
-            # Docker steps (with BuildKit enabled)
+            # Enable BuildKit for Docker
+            export DOCKER_BUILDKIT=1
             export COMPOSE_DOCKER_CLI_BUILD=1
-            sudo docker-compose pull
-            sudo DOCKER_BUILDKIT=1 sudo docker-compose up --build -d
+            
+            # Stop existing containers
+            sudo docker-compose down || true
+            
+            # Build and run with BuildKit enabled
+            sudo -E docker-compose up --build -d
           EOF
