@@ -30,6 +30,13 @@ jobs:
               export PATH="$HOME/.local/bin:$PATH"
             fi
 
+            # Install docker-buildx if not present
+            if ! dpkg -s docker-buildx &> /dev/null; then
+              echo "docker-buildx not found. Installing..."
+              sudo apt-get update
+              sudo apt-get install -y docker-buildx
+            fi
+
             # Ensure uv is available in PATH
             export PATH="$HOME/.local/bin:$PATH"
 
