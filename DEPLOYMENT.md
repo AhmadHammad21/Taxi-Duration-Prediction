@@ -1,3 +1,13 @@
+### GitHub Secrets Setup
+
+Add the following secrets to your GitHub repository:
+
+1. Go to your repository → Settings → Secrets and variables → Actions
+2. Add the following secrets:
+   - `AWS_ACCESS_KEY_ID`: Your AWS access key
+   - `AWS_SECRET_ACCESS_KEY`: Your AWS secret key
+   - `EC2_SSH_KEY`: Your private SSH key
+
 ## 🚀 AWS Deployment Options 
 
 You can deploy this project to AWS using one of two main options. **Choose the option that best fits your use case and expertise:** 
@@ -330,14 +340,6 @@ The GitHub Actions workflow needs the following AWS permissions:
 - `apigateway:PutIntegration`
 - `apigateway:CreateDeployment`
 
-### GitHub Secrets Setup
-
-Add the following secrets to your GitHub repository:
-
-1. Go to your repository → Settings → Secrets and variables → Actions
-2. Add the following secrets:
-   - `AWS_ACCESS_KEY_ID`: Your AWS access key
-   - `AWS_SECRET_ACCESS_KEY`: Your AWS secret key
 
 ## 📋 Deployment Steps
 
