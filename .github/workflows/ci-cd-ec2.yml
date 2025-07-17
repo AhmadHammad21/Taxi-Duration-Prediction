@@ -45,6 +45,6 @@ jobs:
             fi
             cd Taxi-Duration-Prediction
             git pull
-            docker-compose pull
-            docker-compose up --build -d
+            sudo docker-compose pull
+            sudo docker-compose up --build -d
           EOF
