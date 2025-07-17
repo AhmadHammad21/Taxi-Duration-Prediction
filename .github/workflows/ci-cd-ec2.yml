@@ -1,0 +1,33 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+
+      - name: Deploy to EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no ubuntu@<3.91.67.160> << 'EOF'
+            if [ ! -d "Taxi-Duration-Prediction" ]; then
+              git clone https://github.com/<your-username>/Taxi-Duration-Prediction.git
+            fi
+            cd Taxi-Duration-Prediction
+            git pull
+            docker-compose pull
+            docker-compose up --build -d
+          EOF
