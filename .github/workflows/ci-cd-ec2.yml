@@ -20,14 +20,53 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
 
+      - name: Enable Docker BuildKit
+        run: |
+          sudo mkdir -p /etc/docker
+          echo '{"features": {"buildkit": true}}' | sudo tee /etc/docker/daemon.json
+          sudo systemctl restart docker
+
       - name: Deploy to EC2
         run: |
-          ssh -o StrictHostKeyChecking=no ubuntu@<3.91.67.160> << 'EOF'
+          ssh -o StrictHostKeyChecking=no ubuntu@3.91.67.160 << 'EOF'
+            # Install uv if not present
+            if ! command -v uv &> /dev/null; then
+              echo "uv not found. Installing..."
+              curl -LsSf https://astral.sh/uv/install.sh | sh
+              export PATH="$HOME/.local/bin:$PATH"
+            fi
+
+            # Install docker-buildx if not present
+            if ! dpkg -s docker-buildx &> /dev/null; then
+              echo "docker-buildx not found. Installing..."
+              sudo apt-get update
+              sudo apt-get install -y docker-buildx
+            fi
+
+            # Ensure uv is available in PATH
+            export PATH="$HOME/.local/bin:$PATH"
+
+            # Go to project directory (clone if needed)
             if [ ! -d "Taxi-Duration-Prediction" ]; then
-              git clone https://github.com/<your-username>/Taxi-Duration-Prediction.git
+              git clone https://github.com/AhmadHammad21/Taxi-Duration-Prediction.git
             fi
             cd Taxi-Duration-Prediction
+
+            # Checkout dev branch
+            git fetch origin
+            git checkout ${{ github.ref_name }}
             git pull
-            docker-compose pull
-            docker-compose up --build -d
+
+            # Sync dependencies
+            uv sync
+
+            # Enable BuildKit for Docker
+            export DOCKER_BUILDKIT=1
+            export COMPOSE_DOCKER_CLI_BUILD=1
+            
+            # Stop existing containers
+            sudo docker-compose down || true
+            
+            # Build and run with BuildKit enabled
+            sudo -E docker-compose up --build -d
           EOF
