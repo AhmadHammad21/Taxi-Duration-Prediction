@@ -49,6 +49,7 @@ jobs:
 
             # Docker steps (with BuildKit enabled)
             export DOCKER_BUILDKIT=1
+            export COMPOSE_DOCKER_CLI_BUILD=1
             sudo docker-compose pull
             sudo docker-compose up --build -d
           EOF
