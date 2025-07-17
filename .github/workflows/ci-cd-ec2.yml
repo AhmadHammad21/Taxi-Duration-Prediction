@@ -41,15 +41,14 @@ jobs:
 
             # Checkout dev branch
             git fetch origin
-            git checkout dev
+            git checkout ${{ github.ref_name }}
             git pull
 
             # Sync dependencies
             uv sync
 
             # Docker steps (with BuildKit enabled)
-            export DOCKER_BUILDKIT=1
             export COMPOSE_DOCKER_CLI_BUILD=1
             sudo docker-compose pull
-            sudo docker-compose up --build -d
+            sudo DOCKER_BUILDKIT=1 sudo docker-compose up --build -d
           EOF
