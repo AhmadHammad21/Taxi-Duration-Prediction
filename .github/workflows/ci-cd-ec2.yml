@@ -20,6 +20,12 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
 
+      - name: Enable Docker BuildKit
+        run: |
+          sudo mkdir -p /etc/docker
+          echo '{"features": {"buildkit": true}}' | sudo tee /etc/docker/daemon.json
+          sudo systemctl restart docker
+
       - name: Deploy to EC2
         run: |
           ssh -o StrictHostKeyChecking=no ubuntu@3.91.67.160 << 'EOF'
