@@ -1,101 +1,106 @@
+## 🚀 AWS Deployment Options 
 
-## 🚀 AWS Deployment Options
+You can deploy this project to AWS using one of two main options. **Choose the option that best fits your use case and expertise:** 
 
-You can deploy this project to AWS using one of two main options. **Choose the option that best fits your use case and expertise:**
+<details>
+<summary><strong>Option 1: EC2 Deployment (Traditional VM)</strong></summary>
 
-### Option 1: EC2 Deployment (Traditional VM)
+**Best for:**   
+- Full control over the environment   
+- Running both FastAPI and MLflow servers   
+- Easier debugging and monitoring for beginners 
 
-**Best for:**  
-- Full control over the environment  
-- Running both FastAPI and MLflow servers  
-- Easier debugging and monitoring for beginners
+### Steps:
 
-**Steps:**
-1. **Launch an EC2 Instance**
-   - Choose an instance type (e.g., t3.medium or larger for ML workloads)
-   - Open ports 22 (SSH), 8000 (FastAPI), and 5000 (MLflow) in the Security Group
+#### 1. Launch an EC2 Instance
+- Choose an instance type (e.g., t3.medium or larger for ML workloads) 
+- Open ports 22 (SSH), 8000 (FastAPI), and 5000 (MLflow) in the Security Group 
 
-2. **SSH into the Instance**
-   ```sh
-   ssh ec2-user@<your-ec2-public-ip>
-   ```
+#### 2. SSH into the Instance
+```sh 
+ssh ec2-user@<your-ec2-public-ip> 
+``` 
 
-3. **Install Docker & Docker Compose**
-   ```sh
-   sudo yum update -y
-   sudo amazon-linux-extras install docker
-   sudo service docker start
-   sudo usermod -a -G docker ec2-user
-   # Log out and back in for group changes to take effect
-   sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-   sudo chmod +x /usr/local/bin/docker-compose
-   ```
+#### 3. Install Docker & Docker Compose
+```sh 
+sudo yum update -y 
+sudo amazon-linux-extras install docker 
+sudo service docker start 
+sudo usermod -a -G docker ec2-user 
+# Log out and back in for group changes to take effect 
+sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose 
+sudo chmod +x /usr/local/bin/docker-compose 
+``` 
 
-4. **Clone the Repository & Set Up**
-   ```sh
-   git clone https://github.com/yourusername/Taxi-Duration-Prediction.git
-   cd Taxi-Duration-Prediction
-   ```
+#### 4. Clone the Repository & Set Up
+```sh 
+git clone https://github.com/yourusername/Taxi-Duration-Prediction.git 
+cd Taxi-Duration-Prediction 
+``` 
 
-5. **Run the Application**
-   ```sh
-   docker-compose up --build -d
-   ```
+#### 5. Run the Application
+```sh 
+docker-compose up --build -d 
+``` 
 
-6. **Access the Services**
-   - FastAPI: `http://<your-ec2-public-ip>:8000/docs`
-   - MLflow: `http://<your-ec2-public-ip>:5000`
+#### 6. Access the Services
+- FastAPI: `http://<your-ec2-public-ip>:8000/docs` 
+- MLflow: `http://<your-ec2-public-ip>:5000` 
+
+</details>
+
+<details>
+<summary><strong>Option 2: AWS Lambda + API Gateway (Serverless)</strong></summary>
+
+**Best for:**   
+- Cost efficiency (pay-per-use)   
+- Automatic scaling   
+- Deploying only the inference API (FastAPI) 
+
+### Steps:
+
+#### 1. Build a Lambda-Compatible Docker Image
+Use the provided `Dockerfile.lambda` to build your image. 
+
+```sh 
+docker build -f Dockerfile.lambda -t taxi-prediction-lambda . 
+``` 
+
+#### 2. Push the Image to Amazon ECR
+Create an ECR repository if you don't have one.
+Authenticate Docker to ECR and push the image. 
+
+```sh 
+aws ecr create-repository --repository-name taxi-prediction-lambda 
+aws ecr get-login-password | docker login --username AWS --password-stdin <aws_account_id>.dkr.ecr.<region>.amazonaws.com 
+docker tag taxi-prediction-lambda:latest <aws_account_id>.dkr.ecr.<region>.amazonaws.com/taxi-prediction-lambda:latest 
+docker push <aws_account_id>.dkr.ecr.<region>.amazonaws.com/taxi-prediction-lambda:latest 
+``` 
+
+#### 3. Create a Lambda Function (Container Image)
+In the AWS Console, create a new Lambda function using the ECR image. 
+
+#### 4. Set Up API Gateway
+Create a new HTTP API Gateway.
+Integrate it with your Lambda function. 
+
+#### 5. Test the Endpoint
+You'll get a public URL from API Gateway (e.g., `https://xxxxxx.execute-api.<region>.amazonaws.com/`). 
+Test with `/docs` or `/predict` endpoints. 
+
+</details>
 
 ---
 
-### Option 2: AWS Lambda + API Gateway (Serverless)
+### 📝 Notes 
 
-**Best for:**  
-- Cost efficiency (pay-per-use)  
-- Automatic scaling  
-- Deploying only the inference API (FastAPI)
-
-**Steps:**
-1. **Build a Lambda-Compatible Docker Image**
-   - Use the provided `Dockerfile.lambda` to build your image.
-
-   ```sh
-   docker build -f Dockerfile.lambda -t taxi-prediction-lambda .
-   ```
-
-2. **Push the Image to Amazon ECR**
-   - Create an ECR repository if you don’t have one.
-   - Authenticate Docker to ECR and push the image.
-
-   ```sh
-   aws ecr create-repository --repository-name taxi-prediction-lambda
-   aws ecr get-login-password | docker login --username AWS --password-stdin <aws_account_id>.dkr.ecr.<region>.amazonaws.com
-   docker tag taxi-prediction-lambda:latest <aws_account_id>.dkr.ecr.<region>.amazonaws.com/taxi-prediction-lambda:latest
-   docker push <aws_account_id>.dkr.ecr.<region>.amazonaws.com/taxi-prediction-lambda:latest
-   ```
-
-3. **Create a Lambda Function (Container Image)**
-   - In the AWS Console, create a new Lambda function using the ECR image.
-
-4. **Set Up API Gateway**
-   - Create a new HTTP API Gateway.
-   - Integrate it with your Lambda function.
-
-5. **Test the Endpoint**
-   - You’ll get a public URL from API Gateway (e.g., `https://xxxxxx.execute-api.<region>.amazonaws.com/`).
-   - Test with `/docs` or `/predict` endpoints.
+- **Choose only one deployment option** based on your needs.   
+  - EC2 is more flexible and suitable for running the full stack (including MLflow). 
+  - Lambda + API Gateway is more scalable and cost-effective for serving the inference API only. 
+- For production, consider using managed services for logging, monitoring, and secrets management. 
+- For advanced use cases, you can also explore ECS/Fargate or Kubernetes (see To-Do list). 
 
 ---
-
-### 📝 Notes
-
-- **Choose only one deployment option** based on your needs.  
-  - EC2 is more flexible and suitable for running the full stack (including MLflow).
-  - Lambda + API Gateway is more scalable and cost-effective for serving the inference API only.
-- For production, consider using managed services for logging, monitoring, and secrets management.
-- For advanced use cases, you can also explore ECS/Fargate or Kubernetes (see To-Do list).
-
---- 
 
 # Deployment Guide - NYC Taxi Duration Prediction (Lambda + API Gateway)
 
