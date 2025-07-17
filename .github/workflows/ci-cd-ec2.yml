@@ -22,9 +22,9 @@ jobs:
 
       - name: Deploy to EC2
         run: |
-          ssh -o StrictHostKeyChecking=no ubuntu@<3.91.67.160> << 'EOF'
+          ssh -o StrictHostKeyChecking=no ubuntu@3.91.67.160 << 'EOF'
             if [ ! -d "Taxi-Duration-Prediction" ]; then
-              git clone https://github.com/<your-username>/Taxi-Duration-Prediction.git
+              git clone https://github.com/AhmadHammad21/Taxi-Duration-Prediction.git
             fi
             cd Taxi-Duration-Prediction
             git pull
