@@ -154,8 +154,8 @@ taxi-duration-prediction/
 - [ ] Data Version Control (DVC)
 - ✅ Add Workflow (CI/CD) GitHub Actions
 - ✅ Docker / Docker Compose
-- [ ] Deployment Option 1: AWS Lambda + API Gateway 
-- ✅ Deployment Option 2: EC2 Server
+- ✅ Deployment Option 1: EC2 Deployment (Traditional VM)
+- [ ] Deployment Option 2: AWS Lambda + API Gateway (modify readme.md again)
 - [ ] Deployment Option 3: ECs + Fargate
 - [ ] Monitoring
 - [ ] Grafana / Prometheus
@@ -165,7 +165,7 @@ taxi-duration-prediction/
 
 
 ## Time taken to build this project
-- 25 Hours
+- 32 Hours
 
 ## Contributing
 Anyone can contribute.

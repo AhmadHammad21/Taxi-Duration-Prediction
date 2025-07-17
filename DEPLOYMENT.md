@@ -13,24 +13,53 @@ You can deploy this project to AWS using one of two main options. **Choose the o
 ### Steps:
 
 #### 1. Launch an EC2 Instance
-- Choose an instance type (e.g., t3.medium or larger for ML workloads) 
-- Open ports 22 (SSH), 8000 (FastAPI), and 5000 (MLflow) in the Security Group 
+
+1. **Go to AWS Console** → EC2 → Launch Instance
+2. **Choose AMI**: Select "Ubuntu Server 22.04 LTS (HVM), SSD Volume Type"
+3. **Instance Type**: Choose t3.medium or larger (recommended for ML workloads)
+4. **Key Pair**: Create a new key pair or select an existing one (download the .pem file)
+5. **Network Settings**: 
+   - Create a new Security Group or use existing one
+   - **Configure Security Group Rules** (see step 1.1 below)
+6. **Storage**: Default 8GB is usually sufficient, increase if needed
+7. **Launch Instance**
+
+#### 1.1. Security Group Configuration
+
+⚠️ **Security Warning**: The following ports should **NOT** be open to `0.0.0.0/0` (everywhere) in production. Instead, restrict access to your specific IP address or VPC.
+
+**Inbound Rules to Add:**
+- **SSH (Port 22)**: Your IP address only (`<your-ip>/32`)
+- **HTTP (Port 80)**: Your IP address only (`<your-ip>/32`) 
+- **Custom TCP (Port 8000)**: Your IP address only (`<your-ip>/32`) - FastAPI
+- **Custom TCP (Port 5000)**: Your IP address only (`<your-ip>/32`) - MLflow
+
+**To find your IP address**: Visit [whatismyipaddress.com](https://whatismyipaddress.com) and use that IP with `/32` suffix.
+
+**Example Security Group Rules:**
+```
+Type        Protocol    Port Range    Source          Description
+SSH         TCP         22           203.0.113.0/32   SSH access from my IP
+HTTP        TCP         80           203.0.113.0/32   HTTP access from my IP  
+Custom TCP  TCP         8000         203.0.113.0/32   FastAPI from my IP
+Custom TCP  TCP         5000         203.0.113.0/32   MLflow from my IP
+```
 
 #### 2. SSH into the Instance
 ```sh 
-ssh ec2-user@<your-ec2-public-ip> 
+# Make sure your key file has correct permissions
+chmod 400 your-key-file.pem
+
+# Connect to your Ubuntu instance
+ssh -i your-key-file.pem ubuntu@<your-ec2-public-ip> 
 ``` 
 
 #### 3. Install Docker & Docker Compose
 ```sh 
-sudo yum update -y 
-sudo amazon-linux-extras install docker 
-sudo service docker start 
-sudo usermod -a -G docker ec2-user 
-# Log out and back in for group changes to take effect 
-sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose 
-sudo chmod +x /usr/local/bin/docker-compose 
-``` 
+# Update package index
+sudo apt update
+
+# Install D 
 
 #### 4. Clone the Repository & Set Up
 ```sh 
