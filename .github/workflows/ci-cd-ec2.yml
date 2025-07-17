@@ -23,28 +23,31 @@ jobs:
       - name: Deploy to EC2
         run: |
           ssh -o StrictHostKeyChecking=no ubuntu@3.91.67.160 << 'EOF'
-            # Install Docker if not present
-            if ! command -v docker &> /dev/null; then
-              echo "Docker not found. Installing..."
-              sudo apt-get update
-              sudo apt-get install -y docker.io
-              sudo systemctl start docker
-              sudo systemctl enable docker
-              sudo usermod -aG docker \$USER
+            # Install uv if not present
+            if ! command -v uv &> /dev/null; then
+              echo "uv not found. Installing..."
+              curl -LsSf https://astral.sh/uv/install.sh | sh
+              export PATH="$HOME/.local/bin:$PATH"
             fi
 
-            # Install Docker Compose if not present
-            if ! command -v docker-compose &> /dev/null; then
-              echo "Docker Compose not found. Installing..."
-              sudo apt-get update
-              sudo apt-get install -y docker-compose
-            fi
+            # Ensure uv is available in PATH
+            export PATH="$HOME/.local/bin:$PATH"
 
+            # Go to project directory (clone if needed)
             if [ ! -d "Taxi-Duration-Prediction" ]; then
               git clone https://github.com/AhmadHammad21/Taxi-Duration-Prediction.git
             fi
             cd Taxi-Duration-Prediction
+
+            # Checkout dev branch
+            git fetch origin
+            git checkout dev
             git pull
+
+            # Sync dependencies
+            uv sync
+
+            # Docker steps (with sudo)
             sudo docker-compose pull
             sudo docker-compose up --build -d
           EOF
