@@ -6,8 +6,8 @@ url = 'https://kcqpx7zv7r4feu2j2by2ntiaqe0szpet.lambda-url.us-east-1.on.aws/api/
 # print(response)
 # Example data to send (change according to your API)
 payload = {
-    "DOLocationID": "x",
-    "PULocationID": "y",
+    "DOLocationID": "1",
+    "PULocationID": "2",
     "trip_distance": 5
 }
 
