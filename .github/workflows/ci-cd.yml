@@ -36,8 +36,6 @@ env:
   ECR_REPOSITORY_PROD: taxi-duration-prediction-prod
   LAMBDA_FUNCTION_DEV: taxi-prediction-dev
   LAMBDA_FUNCTION_PROD: taxi-prediction-prod
-  API_GATEWAY_NAME_DEV: Taxi Prediction API Dev
-  API_GATEWAY_NAME_PROD: Taxi Prediction API Prod
   LAMBDA_ROLE_DEV: taxi-duration-prediction-dev
   LAMBDA_ROLE_PROD: taxi-duration-prediction-prod
 
@@ -251,48 +249,23 @@ jobs:
           --function-name ${{ env.LAMBDA_FUNCTION_DEV }} \
           --image-uri ${{ needs.build-and-push.outputs.image }}
 
-    - name: Create API Gateway for development (if not exists)
+    - name: Create Lambda Function URL (if not exists)
       run: |
-        # Create API Gateway REST API if it doesn't exist
-        API_ID=$(aws apigateway get-rest-apis --query 'items[?name==`"${{ env.API_GATEWAY_NAME_DEV }}"`].id' --output text)
-        if [ -z "$API_ID" ]; then
-          API_ID=$(aws apigateway create-rest-api --name "${{ env.API_GATEWAY_NAME_DEV }}" --description "Development API for taxi duration prediction" --query 'id' --output text)
+        set -e
+        FUNC_NAME="${{ env.LAMBDA_FUNCTION_DEV }}"
+        FUNC_URL=$(aws lambda get-function-url-config --function-name $FUNC_NAME --query 'FunctionUrl' --output text 2>/dev/null || echo "")
+        if [ -z "$FUNC_URL" ]; then
+          FUNC_URL=$(aws lambda create-function-url-config \
+            --function-name $FUNC_NAME \
+            --auth-type NONE \
+            --cors AllowOrigins='*' \
+            --query 'FunctionUrl' --output text)
+          echo "Created Function URL: $FUNC_URL"
+        else
+          echo "Function URL already exists: $FUNC_URL"
         fi
-        echo "API_ID=$API_ID" >> $GITHUB_ENV
-        echo "API_URL=https://$API_ID.execute-api.${{ env.AWS_REGION }}.amazonaws.com/dev" >> $GITHUB_ENV
-        
-        # Get root resource ID
-        ROOT_ID=$(aws apigateway get-resources --rest-api-id $API_ID --query 'items[?path==`/`].id' --output text)
-        
-        # Create /predict resource
-        PREDICT_RESOURCE_ID=$(aws apigateway get-resources --rest-api-id $API_ID --query 'items[?path==`/predict`].id' --output text)
-        if [ -z "$PREDICT_RESOURCE_ID" ]; then
-          PREDICT_RESOURCE_ID=$(aws apigateway create-resource --rest-api-id $API_ID --parent-id $ROOT_ID --path-part "predict" --query 'id' --output text)
-        fi
-        
-        # Create /health resource
-        HEALTH_RESOURCE_ID=$(aws apigateway get-resources --rest-api-id $API_ID --query 'items[?path==`/health`].id' --output text)
-        if [ -z "$HEALTH_RESOURCE_ID" ]; then
-          HEALTH_RESOURCE_ID=$(aws apigateway create-resource --rest-api-id $API_ID --parent-id $ROOT_ID --path-part "health" --query 'id' --output text)
-        fi
-        
-        # Create POST method for /predict
-        aws apigateway put-method --rest-api-id $API_ID --resource-id $PREDICT_RESOURCE_ID --http-method POST --authorization-type NONE || true
-        # Create GET method for /health
-        aws apigateway put-method --rest-api-id $API_ID --resource-id $HEALTH_RESOURCE_ID --http-method GET --authorization-type NONE || true
-        
-        # Create Lambda integration for /predict
-        ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-        aws apigateway put-integration --rest-api-id $API_ID --resource-id $PREDICT_RESOURCE_ID --http-method POST --type AWS_PROXY --integration-http-method POST --uri arn:aws:apigateway:${{ env.AWS_REGION }}:lambda:path/2015-03-31/functions/arn:aws:lambda:${{ env.AWS_REGION }}:$ACCOUNT_ID:function:${{ env.LAMBDA_FUNCTION_DEV }}/invocations || true
-        # Create Lambda integration for /health
-        aws apigateway put-integration --rest-api-id $API_ID --resource-id $HEALTH_RESOURCE_ID --http-method GET --type AWS_PROXY --integration-http-method POST --uri arn:aws:apigateway:${{ env.AWS_REGION }}:lambda:path/2015-03-31/functions/arn:aws:lambda:${{ env.AWS_REGION }}:$ACCOUNT_ID:function:${{ env.LAMBDA_FUNCTION_DEV }}/invocations || true
-        
-        # Add Lambda permission for API Gateway
-        aws lambda add-permission --function-name ${{ env.LAMBDA_FUNCTION_DEV }} --statement-id apigateway-dev --action lambda:InvokeFunction --principal apigateway.amazonaws.com --source-arn "arn:aws:execute-api:${{ env.AWS_REGION }}:$ACCOUNT_ID:$API_ID/*/*/*" || true
-        
-        # Deploy API
-        aws apigateway create-deployment --rest-api-id $API_ID --stage-name dev
-        
+        echo "FUNC_URL=$FUNC_URL" >> $GITHUB_ENV
+
     - name: Wait for Lambda function to be ready
       run: |
         aws lambda wait function-updated --function-name ${{ env.LAMBDA_FUNCTION_DEV }}
@@ -300,20 +273,18 @@ jobs:
         
     - name: Run smoke tests for development
       run: |
-        # Test health endpoint
-        curl -f ${{ env.API_URL }}/health || exit 1
+        curl -f ${{ env.FUNC_URL }}/health || exit 1
         
-        # Test prediction endpoint
-        curl -f -X POST ${{ env.API_URL }}/predict \
+        curl -f -X POST ${{ env.FUNC_URL }}/predict \
           -H "Content-Type: application/json" \
           -d '{"PULocationID": 1, "DOLocationID": 2, "trip_distance": 5.0}' || exit 1
           
     - name: Output development URL
       run: |
         echo "🚀 Development API deployed successfully!"
-        echo "📍 API URL: ${{ env.API_URL }}"
-        echo "🔗 Health Check: ${{ env.API_URL }}/health"
-        echo "🔗 Prediction Endpoint: ${{ env.API_URL }}/predict"
+        echo "📍 API URL: ${{ env.FUNC_URL }}"
+        echo "🔗 Health Check: ${{ env.FUNC_URL }}/health"
+        echo "🔗 Prediction Endpoint: ${{ env.FUNC_URL }}/predict"
 
   # ================================ Deploy to Production ================================
   deploy-prod:
@@ -343,47 +314,22 @@ jobs:
           --function-name ${{ env.LAMBDA_FUNCTION_PROD }} \
           --image-uri ${{ needs.build-and-push.outputs.image }}
 
-    - name: Create API Gateway for production (if not exists)
+    - name: Create Lambda Function URL (if not exists)
       run: |
-        # Create API Gateway REST API if it doesn't exist
-        API_ID=$(aws apigateway get-rest-apis --query 'items[?name==`"${{ env.API_GATEWAY_NAME_PROD }}"`].id' --output text)
-        if [ -z "$API_ID" ]; then
-          API_ID=$(aws apigateway create-rest-api --name "${{ env.API_GATEWAY_NAME_PROD }}" --description "Production API for taxi duration prediction" --query 'id' --output text)
+        set -e
+        FUNC_NAME="${{ env.LAMBDA_FUNCTION_PROD }}"
+        FUNC_URL=$(aws lambda get-function-url-config --function-name $FUNC_NAME --query 'FunctionUrl' --output text 2>/dev/null || echo "")
+        if [ -z "$FUNC_URL" ]; then
+          FUNC_URL=$(aws lambda create-function-url-config \
+            --function-name $FUNC_NAME \
+            --auth-type NONE \
+            --cors AllowOrigins='*' \
+            --query 'FunctionUrl' --output text)
+          echo "Created Function URL: $FUNC_URL"
+        else
+          echo "Function URL already exists: $FUNC_URL"
         fi
-        echo "API_ID=$API_ID" >> $GITHUB_ENV
-        echo "API_URL=https://$API_ID.execute-api.${{ env.AWS_REGION }}.amazonaws.com/prod" >> $GITHUB_ENV
-        
-        # Get root resource ID
-        ROOT_ID=$(aws apigateway get-resources --rest-api-id $API_ID --query 'items[?path==`/`].id' --output text)
-        
-        # Create /predict resource
-        PREDICT_RESOURCE_ID=$(aws apigateway get-resources --rest-api-id $API_ID --query 'items[?path==`/predict`].id' --output text)
-        if [ -z "$PREDICT_RESOURCE_ID" ]; then
-          PREDICT_RESOURCE_ID=$(aws apigateway create-resource --rest-api-id $API_ID --parent-id $ROOT_ID --path-part "predict" --query 'id' --output text)
-        fi
-        
-        # Create /health resource
-        HEALTH_RESOURCE_ID=$(aws apigateway get-resources --rest-api-id $API_ID --query 'items[?path==`/health`].id' --output text)
-        if [ -z "$HEALTH_RESOURCE_ID" ]; then
-          HEALTH_RESOURCE_ID=$(aws apigateway create-resource --rest-api-id $API_ID --parent-id $ROOT_ID --path-part "health" --query 'id' --output text)
-        fi
-        
-        # Create POST method for /predict
-        aws apigateway put-method --rest-api-id $API_ID --resource-id $PREDICT_RESOURCE_ID --http-method POST --authorization-type NONE || true
-        # Create GET method for /health
-        aws apigateway put-method --rest-api-id $API_ID --resource-id $HEALTH_RESOURCE_ID --http-method GET --authorization-type NONE || true
-        
-        # Create Lambda integration for /predict
-        ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-        aws apigateway put-integration --rest-api-id $API_ID --resource-id $PREDICT_RESOURCE_ID --http-method POST --type AWS_PROXY --integration-http-method POST --uri arn:aws:apigateway:${{ env.AWS_REGION }}:lambda:path/2015-03-31/functions/arn:aws:lambda:${{ env.AWS_REGION }}:$ACCOUNT_ID:function:${{ env.LAMBDA_FUNCTION_PROD }}/invocations || true
-        # Create Lambda integration for /health
-        aws apigateway put-integration --rest-api-id $API_ID --resource-id $HEALTH_RESOURCE_ID --http-method GET --type AWS_PROXY --integration-http-method POST --uri arn:aws:apigateway:${{ env.AWS_REGION }}:lambda:path/2015-03-31/functions/arn:aws:lambda:${{ env.AWS_REGION }}:$ACCOUNT_ID:function:${{ env.LAMBDA_FUNCTION_PROD }}/invocations || true
-        
-        # Add Lambda permission for API Gateway
-        aws lambda add-permission --function-name ${{ env.LAMBDA_FUNCTION_PROD }} --statement-id apigateway-prod --action lambda:InvokeFunction --principal apigateway.amazonaws.com --source-arn "arn:aws:execute-api:${{ env.AWS_REGION }}:$ACCOUNT_ID:$API_ID/*/*/*" || true
-        
-        # Deploy API
-        aws apigateway create-deployment --rest-api-id $API_ID --stage-name prod
+        echo "FUNC_URL=$FUNC_URL" >> $GITHUB_ENV
         
     - name: Wait for Lambda function to be ready
       run: |
@@ -393,11 +339,11 @@ jobs:
     - name: Run production tests
       run: |
         # Test health endpoint
-        curl -f ${{ env.API_URL }}/health || exit 1
+        curl -f ${{ env.FUNC_URL }}/health || exit 1
         
         # Test prediction endpoint with load
         for i in {1..10}; do
-          curl -f -X POST ${{ env.API_URL }}/predict \
+          curl -f -X POST ${{ env.FUNC_URL }}/predict \
             -H "Content-Type: application/json" \
             -d '{"PULocationID": 1, "DOLocationID": 2, "trip_distance": 5.0}' || exit 1
         done
@@ -405,9 +351,9 @@ jobs:
     - name: Output production URL
       run: |
         echo "🚀 Production API deployed successfully!"
-        echo "📍 API URL: ${{ env.API_URL }}"
-        echo "🔗 Health Check: ${{ env.API_URL }}/health"
-        echo "🔗 Prediction Endpoint: ${{ env.API_URL }}/predict"
+        echo "📍 API URL: ${{ env.FUNC_URL }}"
+        echo "🔗 Health Check: ${{ env.FUNC_URL }}/health"
+        echo "🔗 Prediction Endpoint: ${{ env.FUNC_URL }}/predict"
         
     - name: Notify deployment success
       if: success()
@@ -486,7 +432,7 @@ jobs:
     - name: Run load test
       run: |
         locust -f tests/performance/locustfile.py \
-          --host=${{ env.API_URL }} \
+          --host=${{ env.FUNC_URL }} \
           --users=10 \
           --spawn-rate=2 \
           --run-time=60s \
