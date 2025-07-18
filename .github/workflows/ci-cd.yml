@@ -274,7 +274,7 @@ jobs:
     - name: Run smoke tests for development
       run: |
         
-        curl -f -X POST ${{ env.FUNC_URL }}predict \
+        curl -f -X POST ${{ env.FUNC_URL }}api/v1/predict \
           -H "Content-Type: application/json" \
           -d '{"PULocationID": "1", "DOLocationID": "2", "trip_distance": 5.0}' || exit 1
           
