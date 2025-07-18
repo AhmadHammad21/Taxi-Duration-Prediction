@@ -3,17 +3,45 @@ name: Deploy to EC2
 on:
   push:
     branches:
-      - main
       - dev
+      - main
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - prod
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+
+      - name: Set environment variables
+        run: |
+          if [[ "${{ github.ref_name }}" == "main" ]]; then
+            echo "ENVIRONMENT=prod" >> $GITHUB_ENV
+            echo "EC2_IP=${{ secrets.EC2_PROD_IP }}" >> $GITHUB_ENV
+          else
+            echo "ENVIRONMENT=dev" >> $GITHUB_ENV
+            echo "EC2_IP=${{ secrets.EC2_DEV_IP }}" >> $GITHUB_ENV
+          fi
+          
+          # For manual dispatch, use the selected environment
+          if [[ "${{ github.event.inputs.environment }}" == "prod" ]]; then
+            echo "ENVIRONMENT=prod" >> $GITHUB_ENV
+            echo "EC2_IP=${{ secrets.EC2_PROD_IP }}" >> $GITHUB_ENV
+          elif [[ "${{ github.event.inputs.environment }}" == "dev" ]]; then
+            echo "ENVIRONMENT=dev" >> $GITHUB_ENV
+            echo "EC2_IP=${{ secrets.EC2_DEV_IP }}" >> $GITHUB_ENV
+          fi
 
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.8.0
@@ -26,9 +54,12 @@ jobs:
           echo '{"features": {"buildkit": true}}' | sudo tee /etc/docker/daemon.json
           sudo systemctl restart docker
 
-      - name: Deploy to EC2
+      - name: Deploy to EC2 (${{ env.ENVIRONMENT }})
         run: |
-          ssh -o StrictHostKeyChecking=no ubuntu@3.91.67.160 << 'EOF'
+          echo "🚀 Deploying to ${{ env.ENVIRONMENT }} environment..."
+          echo "📍 Target IP: ${{ env.EC2_IP }}"
+          
+          ssh -o StrictHostKeyChecking=no ubuntu@${{ env.EC2_IP }} << 'EOF'
             # Install uv if not present
             if ! command -v uv &> /dev/null; then
               echo "uv not found. Installing..."
@@ -46,13 +77,20 @@ jobs:
             # Ensure uv is available in PATH
             export PATH="$HOME/.local/bin:$PATH"
 
-            # Go to project directory (clone if needed)
-            if [ ! -d "Taxi-Duration-Prediction" ]; then
-              git clone https://github.com/AhmadHammad21/Taxi-Duration-Prediction.git
+            # Set project directory based on environment
+            if [[ "${{ env.ENVIRONMENT }}" == "prod" ]]; then
+              PROJECT_DIR="Taxi-Duration-Prediction-prod"
+            else
+              PROJECT_DIR="Taxi-Duration-Prediction-dev"
             fi
-            cd Taxi-Duration-Prediction
 
-            # Checkout dev branch
+            # Go to project directory (clone if needed)
+            if [ ! -d "$PROJECT_DIR" ]; then
+              git clone https://github.com/AhmadHammad21/Taxi-Duration-Prediction.git "$PROJECT_DIR"
+            fi
+            cd "$PROJECT_DIR"
+
+            # Checkout appropriate branch
             git fetch origin
             git checkout ${{ github.ref_name }}
             git pull
@@ -69,4 +107,17 @@ jobs:
             
             # Build and run with BuildKit enabled
             sudo -E docker-compose up --build -d
+            
+            # Show running containers
+            echo "✅ Deployment completed. Running containers:"
+            sudo docker ps
           EOF
+
+      - name: Deployment Summary
+        run: |
+          echo "📊 Deployment Summary:"
+          echo "• Environment: ${{ env.ENVIRONMENT }}"
+          echo "• Branch: ${{ github.ref_name }}"
+          echo "• Target IP: ${{ env.EC2_IP }}"
+          echo "• FastAPI URL: http://${{ env.EC2_IP }}:8000"
+          echo "• MLflow URL: http://${{ env.EC2_IP }}:5000"

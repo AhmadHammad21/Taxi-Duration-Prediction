@@ -6,7 +6,9 @@ Add the following secrets to your GitHub repository:
 2. Add the following secrets:
    - `AWS_ACCESS_KEY_ID`: Your AWS access key
    - `AWS_SECRET_ACCESS_KEY`: Your AWS secret key
-   - `EC2_SSH_KEY`: Your private SSH key
+   - `EC2_SSH_KEY`: Your private SSH key (Needed only for EC2 Deployment)
+   - `EC2_DEV_IP`: EC2 instance Dev IP Address (Needed only for EC2 Deployment) 
+   - `EC2_PROD_IP`: EC2 instance Prod IP Address (Needed only for EC2 Deployment)
 
 ## 🚀 AWS Deployment Options 
 
