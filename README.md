@@ -107,7 +107,16 @@ docker-compose down
 
 ## Images
 
-### CI/CD Pipeline
+### Deployment Options
+
+This project supports two distinct deployment strategies, each with its own CI/CD pipeline to accommodate different infrastructure needs and use cases.
+
+## Deployment Option 1: EC2 Virtual Machine
+
+![Workflows](images/workflows.png)
+
+
+## Deployment Option 2: Serverless (AWS Lambda + API Gateway)
 
 ![CI/CD Pipeline 1](images/ci_cd_workflow.png)
 
@@ -165,7 +174,7 @@ taxi-duration-prediction/
 
 
 ## Time taken to build this project
-- 32 Hours
+- 33 Hours
 
 ## Contributing
 Anyone can contribute.
