@@ -1,3 +1,148 @@
+### GitHub Secrets Setup
+
+Add the following secrets to your GitHub repository:
+
+1. Go to your repository → Settings → Secrets and variables → Actions
+2. Add the following secrets:
+   - `AWS_ACCESS_KEY_ID`: Your AWS access key
+   - `AWS_SECRET_ACCESS_KEY`: Your AWS secret key
+   - `EC2_SSH_KEY`: Your private SSH key (Needed only for EC2 Deployment)
+   - `EC2_DEV_IP`: EC2 instance Dev IP Address (Needed only for EC2 Deployment) 
+   - `EC2_PROD_IP`: EC2 instance Prod IP Address (Needed only for EC2 Deployment)
+
+## 🚀 AWS Deployment Options 
+
+You can deploy this project to AWS using one of two main options. **Choose the option that best fits your use case and expertise:** 
+
+<details>
+<summary><strong>Option 1: EC2 Deployment (Traditional VM)</strong></summary>
+
+**Best for:**   
+- Full control over the environment   
+- Running both FastAPI and MLflow servers   
+- Easier debugging and monitoring for beginners 
+
+### Steps:
+
+#### 1. Launch an EC2 Instance
+
+1. **Go to AWS Console** → EC2 → Launch Instance
+2. **Choose AMI**: Select "Ubuntu Server 22.04 LTS (HVM), SSD Volume Type"
+3. **Instance Type**: Choose t3.medium or larger (recommended for ML workloads)
+4. **Key Pair**: Create a new key pair or select an existing one (download the .pem file)
+5. **Network Settings**: 
+   - Create a new Security Group or use existing one
+   - **Configure Security Group Rules** (see step 1.1 below)
+6. **Storage**: Default 8GB is usually sufficient, increase if needed
+7. **Launch Instance**
+
+#### 1.1. Security Group Configuration
+
+⚠️ **Security Warning**: The following ports should **NOT** be open to `0.0.0.0/0` (everywhere) in production. Instead, restrict access to your specific IP address or VPC.
+
+**Inbound Rules to Add:**
+- **SSH (Port 22)**: Your IP address only (`<your-ip>/32`)
+- **HTTP (Port 80)**: Your IP address only (`<your-ip>/32`) 
+- **Custom TCP (Port 8000)**: Your IP address only (`<your-ip>/32`) - FastAPI
+- **Custom TCP (Port 5000)**: Your IP address only (`<your-ip>/32`) - MLflow
+
+**To find your IP address**: Visit [whatismyipaddress.com](https://whatismyipaddress.com) and use that IP with `/32` suffix.
+
+**Example Security Group Rules:**
+```
+Type        Protocol    Port Range    Source          Description
+SSH         TCP         22           203.0.113.0/32   SSH access from my IP
+HTTP        TCP         80           203.0.113.0/32   HTTP access from my IP  
+Custom TCP  TCP         8000         203.0.113.0/32   FastAPI from my IP
+Custom TCP  TCP         5000         203.0.113.0/32   MLflow from my IP
+```
+
+#### 2. SSH into the Instance
+```sh 
+# Make sure your key file has correct permissions
+chmod 400 your-key-file.pem
+
+# Connect to your Ubuntu instance
+ssh -i your-key-file.pem ubuntu@<your-ec2-public-ip> 
+``` 
+
+#### 3. Install Docker & Docker Compose
+```sh 
+# Update package index
+sudo apt update
+
+# Install D 
+
+#### 4. Clone the Repository & Set Up
+```sh 
+git clone https://github.com/yourusername/Taxi-Duration-Prediction.git 
+cd Taxi-Duration-Prediction 
+``` 
+
+#### 5. Run the Application
+```sh 
+docker-compose up --build -d 
+``` 
+
+#### 6. Access the Services
+- FastAPI: `http://<your-ec2-public-ip>:8000/docs` 
+- MLflow: `http://<your-ec2-public-ip>:5000` 
+
+</details>
+
+<details>
+<summary><strong>Option 2: AWS Lambda + API Gateway (Serverless)</strong></summary>
+
+**Best for:**   
+- Cost efficiency (pay-per-use)   
+- Automatic scaling   
+- Deploying only the inference API (FastAPI) 
+
+### Steps:
+
+#### 1. Build a Lambda-Compatible Docker Image
+Use the provided `Dockerfile.lambda` to build your image. 
+
+```sh 
+docker build -f Dockerfile.lambda -t taxi-prediction-lambda . 
+``` 
+
+#### 2. Push the Image to Amazon ECR
+Create an ECR repository if you don't have one.
+Authenticate Docker to ECR and push the image. 
+
+```sh 
+aws ecr create-repository --repository-name taxi-prediction-lambda 
+aws ecr get-login-password | docker login --username AWS --password-stdin <aws_account_id>.dkr.ecr.<region>.amazonaws.com 
+docker tag taxi-prediction-lambda:latest <aws_account_id>.dkr.ecr.<region>.amazonaws.com/taxi-prediction-lambda:latest 
+docker push <aws_account_id>.dkr.ecr.<region>.amazonaws.com/taxi-prediction-lambda:latest 
+``` 
+
+#### 3. Create a Lambda Function (Container Image)
+In the AWS Console, create a new Lambda function using the ECR image. 
+
+#### 4. Set Up API Gateway
+Create a new HTTP API Gateway.
+Integrate it with your Lambda function. 
+
+#### 5. Test the Endpoint
+You'll get a public URL from API Gateway (e.g., `https://xxxxxx.execute-api.<region>.amazonaws.com/`). 
+Test with `/docs` or `/predict` endpoints. 
+
+</details>
+
+---
+
+### 📝 Notes 
+
+- **Choose only one deployment option** based on your needs.   
+  - EC2 is more flexible and suitable for running the full stack (including MLflow). 
+  - Lambda + API Gateway is more scalable and cost-effective for serving the inference API only. 
+- For production, consider using managed services for logging, monitoring, and secrets management. 
+- For advanced use cases, you can also explore ECS/Fargate or Kubernetes (see To-Do list). 
+
+---
+
 # Deployment Guide - NYC Taxi Duration Prediction (Lambda + API Gateway)
 
 This guide covers the deployment of the NYC Taxi Duration Prediction service to both development and production environments using AWS Lambda with container images and API Gateway.
@@ -197,14 +342,6 @@ The GitHub Actions workflow needs the following AWS permissions:
 - `apigateway:PutIntegration`
 - `apigateway:CreateDeployment`
 
-### GitHub Secrets Setup
-
-Add the following secrets to your GitHub repository:
-
-1. Go to your repository → Settings → Secrets and variables → Actions
-2. Add the following secrets:
-   - `AWS_ACCESS_KEY_ID`: Your AWS access key
-   - `AWS_SECRET_ACCESS_KEY`: Your AWS secret key
 
 ## 📋 Deployment Steps
 
