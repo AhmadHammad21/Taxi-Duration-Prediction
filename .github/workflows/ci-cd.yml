@@ -274,7 +274,7 @@ jobs:
     - name: Run smoke tests for development
       run: |
         
-        curl -f -X POST ${{ env.FUNC_URL }}/predict \
+        curl -f -X POST ${{ env.FUNC_URL }}predict \
           -H "Content-Type: application/json" \
           -d '{"PULocationID": "1", "DOLocationID": "2", "trip_distance": 5.0}' || exit 1
           
@@ -282,8 +282,7 @@ jobs:
       run: |
         echo "🚀 Development API deployed successfully!"
         echo "📍 API URL: ${{ env.FUNC_URL }}"
-        echo "🔗 Health Check: ${{ env.FUNC_URL }}/health"
-        echo "🔗 Prediction Endpoint: ${{ env.FUNC_URL }}/predict"
+        echo "🔗 Prediction Endpoint: ${{ env.FUNC_URL }}predict"
 
   # ================================ Deploy to Production ================================
   deploy-prod:
