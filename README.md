@@ -116,7 +116,7 @@ This project supports two distinct deployment strategies, each with its own CI/C
 ![Workflows](images/workflows.png)
 
 
-## Deployment Option 2: Serverless (AWS Lambda + API Gateway)
+## Deployment Option 2: Serverless (AWS Lambda)
 
 ![CI/CD Pipeline 1](images/ci_cd_workflow.png)
 
@@ -165,16 +165,15 @@ taxi-duration-prediction/
 - ✅ Docker / Docker Compose
 - ✅ Deployment Option 1: EC2 Deployment (Traditional VM)
 - ✅ Deployment Option 2: AWS Lambda
-- [ ] Deployment Option 3: ECs + Fargate
-- [ ] Monitoring
-- [ ] Grafana / Prometheus
+- [ ] Deployment Option 3: ECS + Fargate
+- [ ] Monitoring - Grafana and prometheus
 - [ ] Add Kubernetes
 - [ ] Add diagram of project flow
 - [ ] Move the data and evrything to the cloud
 
 
 ## Time taken to build this project
-- 33 Hours
+- 35 Hours
 
 ## Contributing
 Anyone can contribute.

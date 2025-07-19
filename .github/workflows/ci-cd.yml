@@ -1,4 +1,4 @@
-name: CI/CD Pipeline - Lambda + API Gateway
+name: CI/CD Pipeline - AWS Lambda
 
 on:
   push:
