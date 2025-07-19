@@ -403,13 +403,7 @@ jobs:
         
     - name: Run load test
       run: |        
-        locust -f tests/performance/locustfile.py \
-          --host=${{ env.FUNC_URL }} \
-          --users=4 \
-          --spawn-rate=2 \
-          --run-time=25s \
-          --headless \
-          --html=load-test-report.html
+        locust -f tests/performance/locustfile.py --host=${{ env.FUNC_URL }} --users=4 --spawn-rate=2 --run-time=25s --headless --html=load-test-report.html
           
     - name: Upload performance report
       uses: actions/upload-artifact@v4
