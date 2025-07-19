@@ -164,7 +164,7 @@ taxi-duration-prediction/
 - ✅ Add Workflow (CI/CD) GitHub Actions
 - ✅ Docker / Docker Compose
 - ✅ Deployment Option 1: EC2 Deployment (Traditional VM)
-- [ ] Deployment Option 2: AWS Lambda + API Gateway (modify readme.md again)
+- ✅ Deployment Option 2: AWS Lambda
 - [ ] Deployment Option 3: ECs + Fargate
 - [ ] Monitoring
 - [ ] Grafana / Prometheus
