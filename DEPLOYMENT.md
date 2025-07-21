@@ -91,7 +91,7 @@ docker-compose up --build -d
 </details>
 
 <details>
-<summary><strong>Option 2: AWS Lambda + API Gateway (Serverless)</strong></summary>
+<summary><strong>Option 2: AWS Lambda + Function URL (Serverless)</strong></summary>
 
 **Best for:**   
 - Cost efficiency (pay-per-use)   
@@ -121,37 +121,21 @@ docker push <aws_account_id>.dkr.ecr.<region>.amazonaws.com/taxi-prediction-lamb
 #### 3. Create a Lambda Function (Container Image)
 In the AWS Console, create a new Lambda function using the ECR image. 
 
-#### 4. Set Up API Gateway
-Create a new HTTP API Gateway.
-Integrate it with your Lambda function. 
+#### 4. Set Up Function URL
+Create a Function URL
 
 #### 5. Test the Endpoint
-You'll get a public URL from API Gateway (e.g., `https://xxxxxx.execute-api.<region>.amazonaws.com/`). 
-Test with `/docs` or `/predict` endpoints. 
+You'll get a public URL from (e.g., `https://<function_url>.<region>.amazonaws.com/`). 
+Test with `/predict` endpoints. 
 
-</details>
 
----
-
-### 📝 Notes 
-
-- **Choose only one deployment option** based on your needs.   
-  - EC2 is more flexible and suitable for running the full stack (including MLflow). 
-  - Lambda + API Gateway is more scalable and cost-effective for serving the inference API only. 
-- For production, consider using managed services for logging, monitoring, and secrets management. 
-- For advanced use cases, you can also explore ECS/Fargate or Kubernetes (see To-Do list). 
-
----
-
-# Deployment Guide - NYC Taxi Duration Prediction (Lambda + API Gateway)
-
-This guide covers the deployment of the NYC Taxi Duration Prediction service to both development and production environments using AWS Lambda with container images and API Gateway.
+This guide covers the deployment of the NYC Taxi Duration Prediction service to both development and production environments using AWS Lambda with container images and Function URL.
 
 ## 🏗️ Architecture Overview
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   API Gateway   │───▶│   Lambda        │───▶│   FastAPI App   │
+│   Function URL  │──▶│   Lambda        │───▶│   FastAPI App   │
 │                 │    │   Container     │    │   (Mangum)      │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
          │                       │                       │
@@ -181,7 +165,6 @@ This guide covers the deployment of the NYC Taxi Duration Prediction service to 
 2. **Required AWS Services**
    - Amazon ECR (Elastic Container Registry)
    - AWS Lambda
-   - API Gateway
    - CloudWatch Logs
    - IAM (for roles and policies)
 
@@ -333,15 +316,6 @@ The GitHub Actions workflow needs the following AWS permissions:
 - `ecr:CompleteLayerUpload`
 - `ecr:PutImage`
 
-**API Gateway Permissions:**
-- `apigateway:CreateRestApi`
-- `apigateway:GetRestApis`
-- `apigateway:GetResources`
-- `apigateway:CreateResource`
-- `apigateway:PutMethod`
-- `apigateway:PutIntegration`
-- `apigateway:CreateDeployment`
-
 
 ## 📋 Deployment Steps
 
@@ -379,23 +353,6 @@ The GitHub Actions workflow needs the following AWS permissions:
    # Check Lambda function
    aws lambda get-function --function-name taxi-prediction-dev
    
-   # Check API Gateway
-   aws apigateway get-rest-apis --query 'items[?name==`Taxi Prediction API - Dev`]'
-   ```
-
-4. **Test Development Environment**
-   ```bash
-   # Get API Gateway URL
-   API_ID=$(aws apigateway get-rest-apis --query 'items[?name==`Taxi Prediction API - Dev`].id' --output text)
-   API_URL="https://$API_ID.execute-api.us-east-1.amazonaws.com/dev"
-   
-   # Health check
-   curl $API_URL/health
-   
-   # Prediction test
-   curl -X POST $API_URL/predict \
-     -H "Content-Type: application/json" \
-     -d '{"PULocationID": 1, "DOLocationID": 2, "trip_distance": 5.0}'
    ```
 
 ### 3. Production Environment Deployment
@@ -411,29 +368,6 @@ The GitHub Actions workflow needs the following AWS permissions:
    - The CI/CD pipeline will automatically deploy to production when you push to the `main` branch
    - Or manually trigger via GitHub Actions with environment set to "prod"
 
-3. **Verify Production Deployment**
-   ```bash
-   # Check Lambda function
-   aws lambda get-function --function-name taxi-prediction-prod
-   
-   # Check API Gateway
-   aws apigateway get-rest-apis --query 'items[?name==`Taxi Prediction API - Prod`]'
-   ```
-
-4. **Test Production Environment**
-   ```bash
-   # Get API Gateway URL
-   API_ID=$(aws apigateway get-rest-apis --query 'items[?name==`Taxi Prediction API - Prod`].id' --output text)
-   API_URL="https://$API_ID.execute-api.us-east-1.amazonaws.com/prod"
-   
-   # Health check
-   curl $API_URL/health
-   
-   # Prediction test
-   curl -X POST $API_URL/predict \
-     -H "Content-Type: application/json" \
-     -d '{"PULocationID": 1, "DOLocationID": 2, "trip_distance": 5.0}'
-   ```
 
 ## 🔧 Manual Deployment Commands
 
@@ -469,97 +403,6 @@ aws lambda create-function \
 aws lambda update-function-code \
   --function-name taxi-prediction-dev \
   --image-uri $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/taxi-duration-prediction-lambda:latest
-```
-
-### API Gateway Management
-
-```bash
-# Create API Gateway REST API
-API_ID=$(aws apigateway create-rest-api --name "Taxi Prediction API - Dev" --description "Development API for taxi duration prediction" --query 'id' --output text)
-
-# Get root resource ID
-ROOT_ID=$(aws apigateway get-resources --rest-api-id $API_ID --query 'items[?path==`/`].id' --output text)
-
-# Create /predict resource
-PREDICT_RESOURCE_ID=$(aws apigateway create-resource --rest-api-id $API_ID --parent-id $ROOT_ID --path-part "predict" --query 'id' --output text)
-
-# Create /health resource
-HEALTH_RESOURCE_ID=$(aws apigateway create-resource --rest-api-id $API_ID --parent-id $ROOT_ID --path-part "health" --query 'id' --output text)
-
-# Create POST method for /predict
-aws apigateway put-method \
-  --rest-api-id $API_ID \
-  --resource-id $PREDICT_RESOURCE_ID \
-  --http-method POST \
-  --authorization-type NONE
-
-# Create GET method for /health
-aws apigateway put-method \
-  --rest-api-id $API_ID \
-  --resource-id $HEALTH_RESOURCE_ID \
-  --http-method GET \
-  --authorization-type NONE
-
-# Create Lambda integration for /predict
-aws apigateway put-integration \
-  --rest-api-id $API_ID \
-  --resource-id $PREDICT_RESOURCE_ID \
-  --http-method POST \
-  --type AWS_PROXY \
-  --integration-http-method POST \
-  --uri arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:$AWS_ACCOUNT_ID:function:taxi-prediction-dev/invocations
-
-# Create Lambda integration for /health
-aws apigateway put-integration \
-  --rest-api-id $API_ID \
-  --resource-id $HEALTH_RESOURCE_ID \
-  --http-method GET \
-  --type AWS_PROXY \
-  --integration-http-method POST \
-  --uri arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:$AWS_ACCOUNT_ID:function:taxi-prediction-dev/invocations
-
-# Add Lambda permission for API Gateway
-aws lambda add-permission \
-  --function-name taxi-prediction-dev \
-  --statement-id apigateway-dev \
-  --action lambda:InvokeFunction \
-  --principal apigateway.amazonaws.com \
-  --source-arn "arn:aws:execute-api:us-east-1:$AWS_ACCOUNT_ID:$API_ID/*/*/*"
-
-# Deploy API
-aws apigateway create-deployment --rest-api-id $API_ID --stage-name dev
-```
-
-## 📊 Monitoring and Logging
-
-### CloudWatch Logs
-
-```bash
-# View Lambda function logs
-aws logs describe-log-groups --log-group-name-prefix "/aws/lambda/taxi-prediction"
-
-# Get log streams
-aws logs describe-log-streams --log-group-name "/aws/lambda/taxi-prediction-dev" --order-by LastEventTime --descending
-
-# Get log events
-aws logs get-log-events --log-group-name "/aws/lambda/taxi-prediction-dev" --log-stream-name "log-stream-name"
-```
-
-### Lambda Function Monitoring
-
-```bash
-# Check function configuration
-aws lambda get-function --function-name taxi-prediction-dev
-
-# Check function metrics
-aws cloudwatch get-metric-statistics \
-  --namespace AWS/Lambda \
-  --metric-name Duration \
-  --dimensions Name=FunctionName,Value=taxi-prediction-dev \
-  --start-time $(date -d '1 hour ago' --iso-8601=seconds) \
-  --end-time $(date --iso-8601=seconds) \
-  --period 300 \
-  --statistics Average
 ```
 
 ## 🔄 Scaling and Updates
@@ -613,16 +456,7 @@ Lambda automatically scales based on demand:
    curl -XPOST "http://localhost:9000/2015-03-31/functions/function/invocations" -d '{"httpMethod":"GET","path":"/health"}'
    ```
 
-3. **API Gateway Issues**
-   ```bash
-   # Check API Gateway deployment
-   aws apigateway get-deployments --rest-api-id $API_ID
-   
-   # Check integration
-   aws apigateway get-integration --rest-api-id $API_ID --resource-id $RESOURCE_ID --http-method POST
-   ```
-
-4. **Cold Start Issues**
+3. **Cold Start Issues**
    - Increase memory allocation (faster CPU)
    - Use provisioned concurrency for production
    - Optimize container size
@@ -637,7 +471,7 @@ Lambda automatically scales based on demand:
 2. **High Error Rate**
    - Check CloudWatch logs
    - Monitor function metrics
-   - Verify API Gateway integration
+   - Verify Function URL integration
 
 ## 🔒 Security Best Practices
 
@@ -661,50 +495,6 @@ Lambda automatically scales based on demand:
    - Restrict outbound traffic
    - Use security groups
 
-## 💰 Cost Optimization
-
-1. **Lambda Optimization**
-   - Right-size memory allocation
-   - Optimize container size
-   - Use provisioned concurrency for predictable workloads
-
-2. **API Gateway Optimization**
-   - Use caching where appropriate
-   - Monitor request counts
-   - Consider API Gateway usage plans
-
-3. **Monitoring Costs**
-   - Set up CloudWatch billing alerts
-   - Monitor Lambda execution times
-   - Clean up unused resources
-
-## 📈 Next Steps
-
-1. **Advanced Monitoring**
-   - Set up CloudWatch dashboards
-   - Implement custom metrics
-   - Add alerting
-
-2. **CI/CD Enhancements**
-   - Add blue-green deployments
-   - Implement canary deployments
-   - Add automated rollback
-
-3. **Security Enhancements**
-   - Add WAF protection
-   - Implement API key management
-   - Add request/response validation
-
-4. **Performance Optimization**
-   - Add caching layer (Redis/ElastiCache)
-   - Implement CDN for static content
-   - Add database connection pooling
-
-5. **Advanced Features**
-   - Add custom domain names
-   - Implement API versioning
-   - Add request/response transformation
-
 ## 🔧 Local Development
 
 ### Running Locally with Docker
@@ -721,291 +511,16 @@ curl -XPOST "http://localhost:9000/2015-03-31/functions/function/invocations" \
   -d '{"httpMethod":"GET","path":"/health"}'
 ```
 
-### Running with SAM CLI
-
-```bash
-# Install SAM CLI
-pip install aws-sam-cli
-
-# Create sam template
-cat > template.yaml << EOF
-AWSTemplateFormatVersion: '2010-09-09'
-Transform: AWS::Serverless-2016-10-31
-Resources:
-  TaxiPredictionFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      PackageType: Image
-      MemorySize: 1024
-      Timeout: 30
-      Environment:
-        Variables:
-          APP_ENV: development
-          LOG_LEVEL: DEBUG
-    Metadata:
-      Dockerfile: Dockerfile.lambda
-      DockerContext: .
-EOF
-
-# Build and run locally
-sam build
-sam local start-api
-```
+</details>
 
 ---
 
-For additional support or questions, please refer to the project documentation or create an issue in the repository. 
+### 📝 Notes 
 
-## Prerequisites
+- **Choose only one deployment option** based on your needs.   
+  - EC2 is more flexible and suitable for running the full stack (including MLflow). 
+  - Lambda + Function URL is more scalable and cost-effective for serving the inference API only. 
+- For production, consider using managed services for logging, monitoring, and secrets management. 
+- For advanced use cases, you can also explore ECS/Fargate or Kubernetes (see To-Do list). 
 
-1. **AWS Account** with appropriate permissions
-2. **GitHub Repository** with the code
-3. **AWS Credentials** configured as GitHub Secrets:
-   - `AWS_ACCESS_KEY_ID`
-   - `AWS_SECRET_ACCESS_KEY`
-
-## Required AWS Permissions
-
-The GitHub Actions workflow needs the following AWS permissions:
-
-### IAM Permissions
-- `iam:CreateRole`
-- `iam:PutRolePolicy`
-- `iam:GetRole`
-- `iam:AttachRolePolicy`
-
-### Lambda Permissions
-- `lambda:CreateFunction`
-- `lambda:UpdateFunctionCode`
-- `lambda:GetFunction`
-- `lambda:AddPermission`
-- `lambda:WaitFunctionUpdated`
-
-### ECR Permissions
-- `ecr:CreateRepository`
-- `ecr:DescribeRepositories`
-- `ecr:GetAuthorizationToken`
-- `ecr:BatchCheckLayerAvailability`
-- `ecr:GetDownloadUrlForLayer`
-- `ecr:BatchGetImage`
-- `ecr:InitiateLayerUpload`
-- `ecr:UploadLayerPart`
-- `ecr:CompleteLayerUpload`
-- `ecr:PutImage`
-
-### API Gateway Permissions
-- `apigateway:CreateRestApi`
-- `apigateway:GetRestApis`
-- `apigateway:GetResources`
-- `apigateway:CreateResource`
-- `apigateway:PutMethod`
-- `apigateway:PutIntegration`
-- `apigateway:CreateDeployment`
-
-### CloudWatch Logs Permissions
-- `logs:CreateLogGroup`
-- `logs:CreateLogStream`
-- `logs:PutLogEvents`
-
-## IAM Roles Created Automatically
-
-The CI/CD pipeline automatically creates the following IAM role:
-
-### `lambda-execution-role`
-This role is used by both dev and prod Lambda functions and includes:
-
-**Trust Policy:**
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Principal": {
-        "Service": "lambda.amazonaws.com"
-      },
-      "Action": "sts:AssumeRole"
-    }
-  ]
-}
-```
-
-**Custom Policy (`lambda-custom-policy`):**
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "logs:CreateLogGroup",
-        "logs:CreateLogStream",
-        "logs:PutLogEvents"
-      ],
-      "Resource": "arn:aws:logs:*:*:*"
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
-        "ecr:GetAuthorizationToken",
-        "ecr:BatchCheckLayerAvailability",
-        "ecr:GetDownloadUrlForLayer",
-        "ecr:BatchGetImage"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
-        "lambda:InvokeFunction"
-      ],
-      "Resource": "*"
-    }
-  ]
-}
-```
-
-## Manual IAM Role Creation (if needed)
-
-If you need to create the IAM role manually, run these commands:
-
-```bash
-# Get your AWS account ID
-ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-
-# Create the role
-aws iam create-role \
-  --role-name lambda-execution-role \
-  --assume-role-policy-document '{
-    "Version": "2012-10-17",
-    "Statement": [
-      {
-        "Effect": "Allow",
-        "Principal": {
-          "Service": "lambda.amazonaws.com"
-        },
-        "Action": "sts:AssumeRole"
-      }
-    ]
-  }'
-
-# Create custom policy
-aws iam put-role-policy \
-  --role-name lambda-execution-role \
-  --policy-name lambda-custom-policy \
-  --policy-document '{
-    "Version": "2012-10-17",
-    "Statement": [
-      {
-        "Effect": "Allow",
-        "Action": [
-          "logs:CreateLogGroup",
-          "logs:CreateLogStream",
-          "logs:PutLogEvents"
-        ],
-        "Resource": "arn:aws:logs:*:*:*"
-      },
-      {
-        "Effect": "Allow",
-        "Action": [
-          "ecr:GetAuthorizationToken",
-          "ecr:BatchCheckLayerAvailability",
-          "ecr:GetDownloadUrlForLayer",
-          "ecr:BatchGetImage"
-        ],
-        "Resource": "*"
-      },
-      {
-        "Effect": "Allow",
-        "Action": [
-          "lambda:InvokeFunction"
-        ],
-        "Resource": "*"
-      }
-    ]
-  }'
-```
-
-## Deployment Process
-
-### Automatic Deployment
-
-1. **Push to dev branch** → Deploys to development environment
-2. **Push to main branch** → Deploys to production environment
-3. **Manual trigger** → Choose environment and action
-
-### Manual Deployment
-
-1. Go to GitHub Actions tab
-2. Select "Deploy Taxi Prediction API" workflow
-3. Click "Run workflow"
-4. Choose:
-   - **Environment**: `dev` or `prod`
-   - **Action**: `deploy`, `test-only`, or `train-only`
-   - **Force Deploy**: `true` to skip quality checks
-
-## Architecture
-
-```
-Client Request → API Gateway → Lambda Function → Response
-                     ↓
-              Container Image (ECR)
-                     ↓
-              FastAPI + ML Model
-```
-
-### Components
-
-1. **ECR Repositories**:
-   - `taxi-duration-prediction-dev` (development)
-   - `taxi-duration-prediction-prod` (production)
-
-2. **Lambda Functions**:
-   - `taxi-prediction-dev` (development)
-   - `taxi-prediction-prod` (production)
-
-3. **API Gateway**:
-   - Separate APIs for dev and prod
-   - Endpoints: `/health`, `/predict`
-
-## Testing
-
-### Health Check
-```bash
-curl https://your-api-id.execute-api.region.amazonaws.com/dev/health
-```
-
-### Prediction
-```bash
-curl -X POST https://your-api-id.execute-api.region.amazonaws.com/dev/predict \
-  -H "Content-Type: application/json" \
-  -d '{"PULocationID": 1, "DOLocationID": 2, "trip_distance": 5.0}'
-```
-
-## Troubleshooting
-
-### Common Issues
-
-1. **IAM Role Error**: Ensure the `lambda-execution-role` exists and has proper permissions
-2. **ECR Access Error**: Check that Lambda has ECR read permissions
-3. **API Gateway Error**: Verify Lambda permissions for API Gateway invocation
-4. **Cold Start**: First request may be slow due to container initialization
-
-### Logs
-
-- **Lambda Logs**: CloudWatch Logs `/aws/lambda/taxi-prediction-dev` or `/aws/lambda/taxi-prediction-prod`
-- **API Gateway Logs**: CloudWatch Logs for API Gateway execution
-
-## Cost Optimization
-
-- **Lambda**: Pay per request (100ms increments)
-- **API Gateway**: Pay per request
-- **ECR**: Pay for storage and data transfer
-- **CloudWatch**: Pay for logs storage and ingestion
-
-## Security
-
-- **No authentication** configured by default
-- **CORS** enabled for all origins
-- **Environment variables** for configuration
-- **IAM roles** with minimal required permissions 
+---
