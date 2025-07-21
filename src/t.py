@@ -1,11 +1,14 @@
 import requests
 
-url = 'https://iy7gped0wa.execute-api.us-east-1.amazonaws.com/dev/taxi-prediction-dev'
+url = 'https://kcqpx7zv7r4feu2j2by2ntiaqe0szpet.lambda-url.us-east-1.on.aws/api/v1/predict'
 
+# response = requests.get(url)
+# print(response)
 # Example data to send (change according to your API)
 payload = {
-    "feature1": 1.23,
-    "feature2": 4.56
+    "DOLocationID": "1",
+    "PULocationID": "2",
+    "trip_distance": 5
 }
 
 
