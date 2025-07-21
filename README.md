@@ -170,6 +170,7 @@ taxi-duration-prediction/
 - [ ] Add Kubernetes
 - [ ] Add diagram of project flow
 - [ ] Move the data and evrything to the cloud
+- [ ] Recheck model registry mlflow
 
 
 ## Time taken to build this project
