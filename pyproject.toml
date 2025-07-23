@@ -32,9 +32,7 @@ dependencies = [
 [project.optional-dependencies]
 
 dev = [
-    "ipykernel>=6.29.5"
+    "ipykernel>=6.29.5",
+    "ruff>=0.12.4",
 ]
-
-[tool.uv.dependencies]
-ruff = "*"
 
