@@ -1,6 +1,7 @@
 import os
 from loguru import logger
 import sys
+
 try:
     from config.settings import settings
 except ImportError:
@@ -33,4 +34,4 @@ def setup_logging():
 
 
 def get_logger():
-    return logger 
+    return logger

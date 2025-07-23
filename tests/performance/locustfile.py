@@ -1,5 +1,6 @@
 from locust import HttpUser, task, between
 
+
 class TaxiPredictionUser(HttpUser):
     wait_time = between(1, 3)
 

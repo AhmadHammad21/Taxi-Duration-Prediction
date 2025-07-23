@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from .routes import base, taxi
 from contextlib import asynccontextmanager
+
 # from config.config import config
 # from config.settings import settings
 from .features.feature_pipeline import FeatureEngineer
@@ -29,4 +30,3 @@ handler = Mangum(app)  # This is the AWS Lambda handler
 # # AWS Lambda handler function
 # def lambda_handler(event, context):
 #     return handler(event, context)
-

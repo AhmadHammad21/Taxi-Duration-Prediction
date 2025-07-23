@@ -1,4 +1,4 @@
-import os 
+import os
 import pickle
 import pandas as pd
 from loguru import logger
@@ -11,7 +11,7 @@ def load_simple_model():
         # Try to load from pickle file
         model_path = "src/artifacts/simple_model.pkl"
         if os.path.exists(model_path):
-            with open(model_path, 'rb') as f:
+            with open(model_path, "rb") as f:
                 model = pickle.load(f)
             logger.info("Model loaded from pickle file successfully!")
             return model
@@ -51,8 +51,8 @@ class SimpleModelPredictor:
         """
         # Preprocess the input data
         processed_data = self.preprocess_data(data)
-        
+
         # Make predictions using the model
         predictions = self.model.predict(processed_data)
-        
-        return list(predictions) 
+
+        return list(predictions)
