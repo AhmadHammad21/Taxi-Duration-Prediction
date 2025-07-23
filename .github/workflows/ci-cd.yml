@@ -67,14 +67,14 @@ jobs:
       run: |
         uv sync
         
-    # - name: Run linting
-    #   run: |
-    #     uv run ruff check src/ tests/
-    #     uv run ruff format --check src/ tests/
+    - name: Run linting
+      run: |
+        uv run ruff check src/ tests/
+        uv run ruff format --check src/ tests/
         
-    # - name: Run type checking
-    #   run: |
-    #     uv run mypy src/
+    - name: Run type checking
+      run: |
+        uv run mypy src/
         
     - name: Run security checks
       run: |
