@@ -84,7 +84,7 @@ class FeatureEngineer:
                 logger.info(f"DictVectorizer loaded from {self.dv_path}")
             except FileNotFoundError:
                 logger.error(f"DictVectorizer not found at {self.dv_path}. Please run fit_transform first.")
-                raise ValueError(f"DictVectorizer not found. Please run fit_transform first.")
+                raise ValueError("DictVectorizer not found. Please run fit_transform first.")
         
         df = self._clean_and_engineer(df)
         features = df[self.categorical + self.numerical].to_dict(orient="records")
@@ -102,7 +102,7 @@ class FeatureEngineer:
                 logger.info(f"DictVectorizer loaded from {self.dv_path}")
             except FileNotFoundError:
                 logger.error(f"DictVectorizer not found at {self.dv_path}. Please run fit_transform first.")
-                raise ValueError(f"DictVectorizer not found. Please run fit_transform first.")
+                raise ValueError("DictVectorizer not found. Please run fit_transform first.")
         
         df[self.PU] = df[self.PU].astype(str)
         df[self.DO] = df[self.DO].astype(str)

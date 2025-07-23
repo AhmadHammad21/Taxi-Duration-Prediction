@@ -2166,6 +2166,7 @@ dependencies = [
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "requests" },
+    { name = "ruff" },
     { name = "scikit-learn" },
     { name = "uvicorn" },
     { name = "xgboost" },
@@ -2174,7 +2175,6 @@ dependencies = [
 [package.optional-dependencies]
 dev = [
     { name = "ipykernel" },
-    { name = "ruff" },
 ]
 
 [package.metadata]
@@ -2198,7 +2198,7 @@ requires-dist = [
     { name = "pytest", specifier = ">=8.3.5" },
     { name = "pytest-cov", specifier = ">=4.1.0" },
     { name = "requests", specifier = ">=2.32.3" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.12.4" },
+    { name = "ruff", specifier = ">=0.12.4" },
     { name = "scikit-learn", specifier = ">=1.6.1" },
     { name = "uvicorn", specifier = ">=0.34.2" },
     { name = "xgboost", specifier = ">=3.0.0" },

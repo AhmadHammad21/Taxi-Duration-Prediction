@@ -7,8 +7,6 @@ from .features.feature_pipeline import FeatureEngineer
 from .inference.simple_predict import SimpleModelPredictor
 from .utils.logging_config import setup_logging
 from mangum import Mangum
-import os
-import sys
 
 
 @asynccontextmanager

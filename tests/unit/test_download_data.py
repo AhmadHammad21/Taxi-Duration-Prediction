@@ -4,7 +4,6 @@ import pandas as pd
 from src.config.settings import AppSettings
 from src.data_pulling.download_data import DataDownloader
 import tempfile
-import os
 
 # Fixture to initialize the downloader with real settings
 @pytest.fixture

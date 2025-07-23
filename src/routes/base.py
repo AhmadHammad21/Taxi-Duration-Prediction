@@ -1,5 +1,4 @@
 from fastapi import APIRouter
-from fastapi.responses import JSONResponse
 
 base_router = APIRouter(
     prefix="/api/v1",

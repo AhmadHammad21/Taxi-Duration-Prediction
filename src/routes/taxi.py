@@ -1,6 +1,6 @@
 import random
 import pandas as pd
-from fastapi import APIRouter, Request, status, Request
+from fastapi import APIRouter, Request, status
 from fastapi.responses import JSONResponse
 from ..schemas.taxi_schema import DistanceInput, PredictionInput
 from loguru import logger
