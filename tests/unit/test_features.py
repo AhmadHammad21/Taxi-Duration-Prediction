@@ -34,7 +34,6 @@ def test_clean_and_engineer(sample_df, feature_engineer):
     assert df["PU_DO"].iloc[0] == "1_3"  # Check PU_DO column is correctly created
 
 
-
 def test_missing_airport_fee(sample_df, feature_engineer):
     """
     Test that rows with missing airport fees are dropped in the feature engineering pipeline.
@@ -53,7 +52,9 @@ def test_invalid_duration(sample_df, feature_engineer):
     """
     sample_df_invalid_duration = sample_df.copy()
     sample_df_invalid_duration.loc[0, "tpep_pickup_datetime"] = "2022-01-01 08:00:00"
-    sample_df_invalid_duration.loc[0, "tpep_dropoff_datetime"] = "2022-01-01 07:00:00"  # Invalid duration
+    sample_df_invalid_duration.loc[0, "tpep_dropoff_datetime"] = (
+        "2022-01-01 07:00:00"  # Invalid duration
+    )
 
     df = feature_engineer._clean_and_engineer(sample_df_invalid_duration)
 
@@ -65,11 +66,7 @@ def new_data():
     """
     A new sample dataset for inference or transformation tests.
     """
-    return {
-        "PULocationID": ["186"],
-        "DOLocationID": ["79"],
-        "trip_distance": ["4"]
-    }
+    return {"PULocationID": ["186"], "DOLocationID": ["79"], "trip_distance": ["4"]}
 
 
 # def test_fit_transform(sample_df, feature_engineer):
@@ -157,4 +154,3 @@ def new_data():
 
 #     # Optionally check if the feature vectorization worked as expected
 #     assert X is not None  # Ensure that inference returns a valid result
-

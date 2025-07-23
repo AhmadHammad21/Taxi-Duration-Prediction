@@ -1,15 +1,12 @@
 import random
 import pandas as pd
-from fastapi import APIRouter, Request, status, Request
+from fastapi import APIRouter, Request, status
 from fastapi.responses import JSONResponse
 from ..schemas.taxi_schema import DistanceInput, PredictionInput
 from loguru import logger
 
 
-taxi_router = APIRouter(
-    prefix="/api/v1",
-    tags=["api_v1"]
-)
+taxi_router = APIRouter(prefix="/api/v1", tags=["api_v1"])
 
 
 def calculate_fake_distance(pu_id: str, do_id: str) -> float:
@@ -27,34 +24,32 @@ async def predict(request: Request, input_data: PredictionInput):
     du_location_id = input_data.DOLocationID
 
     # This should be later calculated through an API
-    trip_distance = calculate_fake_distance(pu_location_id, du_location_id) 
+    trip_distance = calculate_fake_distance(pu_location_id, du_location_id)
 
     try:
         new_data = {
             "PULocationID": [pu_location_id],
             "DOLocationID": [du_location_id],
-            "trip_distance": [trip_distance]
+            "trip_distance": [trip_distance],
         }
         new_data_df = pd.DataFrame(new_data)
 
         # Predict using the model
         duration_prediction = request.app.state.model_predictor.predict(new_data_df)
         duration_prediction = float(duration_prediction[0])
-        
+
         return JSONResponse(
             status_code=status.HTTP_200_OK,
             content={
                 "duration": duration_prediction,
-            }
+            },
         )
 
     except Exception as e:
         logger.error(str(e))
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
-            content={
-                "error": "No answer could be generated"
-            }
+            content={"error": "No answer could be generated"},
         )
 
 
@@ -62,16 +57,16 @@ async def predict(request: Request, input_data: PredictionInput):
 async def measure_distance(input_data: DistanceInput):
     """Measure fictional distance between locations."""
     try:
-        distance = calculate_fake_distance(input_data.PULocationID, input_data.DOLocationID)
+        distance = calculate_fake_distance(
+            input_data.PULocationID, input_data.DOLocationID
+        )
 
         return JSONResponse(
-            status_code=status.HTTP_200_OK,
-            content={"distance": distance}
+            status_code=status.HTTP_200_OK, content={"distance": distance}
         )
     except Exception as e:
         logger.error(str(e))
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
-            content={"error": "No answer could be generated"}
+            content={"error": "No answer could be generated"},
         )
-

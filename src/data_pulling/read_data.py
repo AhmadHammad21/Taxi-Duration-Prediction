@@ -24,10 +24,8 @@ def load_train_test(raw_data_directory: str):
 
     return train_df, test_df
 
-def save_processed_data(X, y,
-                      filename: str,
-                      output_dir: Path):
 
+def save_processed_data(X, y, filename: str, output_dir: Path):
     output_path = output_dir / filename
 
     np.savez_compressed(output_path, X=X, y=y)
@@ -37,11 +35,11 @@ def save_processed_data(X, y,
 def load_processed_data(filename: str, output_dir: Path):
     input_path = output_dir / filename
     data = np.load(input_path)
-    
+
     X = data["X"]
     y = data["y"]
-    
+
     logger.info(f"📥 Loaded processed data from {input_path}")
 
-    #X_train, y_train = load_processed_data("train_processed.npz", output_dir)
+    # X_train, y_train = load_processed_data("train_processed.npz", output_dir)
     return X, y

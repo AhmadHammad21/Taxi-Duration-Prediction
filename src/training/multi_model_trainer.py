@@ -14,7 +14,7 @@ class MultiModelTrainer:
         X_train,
         y_train,
         X_test,
-        y_test
+        y_test,
     ):
         for model_name, (model_cls, params) in models.items():
             logger.info(f"🚀 Training {model_name}...")
@@ -25,6 +25,6 @@ class MultiModelTrainer:
                 X_train=X_train,
                 y_train=y_train,
                 X_test=X_test,
-                y_test=y_test
+                y_test=y_test,
             )
             logger.info(f"🚀 Finished Training {model_name}...")

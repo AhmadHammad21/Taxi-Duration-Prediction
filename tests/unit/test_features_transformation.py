@@ -3,29 +3,36 @@ import pytest
 import pandas as pd
 from src.features.feature_pipeline import FeatureEngineer
 
+
 @pytest.fixture
 def sample_df():
     # Sample DataFrame to test with
-    return pd.DataFrame({
-        "tpep_pickup_datetime": ["2022-01-01 08:00:00", "2022-01-01 08:30:00"],
-        "tpep_dropoff_datetime": ["2022-01-01 08:15:00", "2022-01-01 08:45:00"],
-        "Airport_fee": [1.5, 2.0],
-        "PULocationID": [1, 2],
-        "DOLocationID": [3, 4],
-        "trip_distance": [2.5, 3.0],
-    })
+    return pd.DataFrame(
+        {
+            "tpep_pickup_datetime": ["2022-01-01 08:00:00", "2022-01-01 08:30:00"],
+            "tpep_dropoff_datetime": ["2022-01-01 08:15:00", "2022-01-01 08:45:00"],
+            "Airport_fee": [1.5, 2.0],
+            "PULocationID": [1, 2],
+            "DOLocationID": [3, 4],
+            "trip_distance": [2.5, 3.0],
+        }
+    )
+
 
 @pytest.fixture
 def new_data():
     # Sample DataFrame to test with
-    return pd.DataFrame({
-        "tpep_pickup_datetime": ["2022-01-01 08:00:00"],
-        "tpep_dropoff_datetime": ["2022-01-01 08:15:00"],
-        "Airport_fee": [1.5],
-        "PULocationID": [1],
-        "DOLocationID": [3],
-        "trip_distance": [2.5],
-    })
+    return pd.DataFrame(
+        {
+            "tpep_pickup_datetime": ["2022-01-01 08:00:00"],
+            "tpep_dropoff_datetime": ["2022-01-01 08:15:00"],
+            "Airport_fee": [1.5],
+            "PULocationID": [1],
+            "DOLocationID": [3],
+            "trip_distance": [2.5],
+        }
+    )
+
 
 @pytest.fixture
 def feature_engineer(tmp_path, sample_df):
@@ -42,6 +49,7 @@ def feature_engineer(tmp_path, sample_df):
     if os.path.exists(dv_path):
         os.remove(dv_path)
 
+
 def test_fit_transform(sample_df, feature_engineer):
     """
     Test the fit_transform method in FeatureEngineer using real data.
@@ -52,6 +60,7 @@ def test_fit_transform(sample_df, feature_engineer):
     assert X.shape[0] == 2  # Two rows of data should be transformed
     assert y.shape[0] == 2  # Two target values should be present
 
+
 def test_transform(sample_df, feature_engineer):
     """
     Test the transform method in FeatureEngineer using real data.
@@ -60,19 +69,22 @@ def test_transform(sample_df, feature_engineer):
     feature_engineer.fit_transform(sample_df)
 
     # Now, transform new data
-    df = pd.DataFrame({
-        "tpep_pickup_datetime": ["2022-01-01 08:00:00"],
-        "tpep_dropoff_datetime": ["2022-01-01 08:15:00"],
-        "Airport_fee": [4.0],
-        "PULocationID": [1],
-        "DOLocationID": [3],
-        "trip_distance": [2.0],
-    })
+    df = pd.DataFrame(
+        {
+            "tpep_pickup_datetime": ["2022-01-01 08:00:00"],
+            "tpep_dropoff_datetime": ["2022-01-01 08:15:00"],
+            "Airport_fee": [4.0],
+            "PULocationID": [1],
+            "DOLocationID": [3],
+            "trip_distance": [2.0],
+        }
+    )
     X, y = feature_engineer.transform(df)
 
     # Check the transformed data shape
     assert X.shape[0] == 1  # One row of transformed data
     assert y.shape[0] == 1  # One target value
+
 
 def test_inference(sample_df, feature_engineer):
     """
@@ -82,29 +94,36 @@ def test_inference(sample_df, feature_engineer):
     feature_engineer.fit_transform(sample_df)
 
     # Now, do inference with new data
-    df = pd.DataFrame({
-        "PULocationID": [1],
-        "DOLocationID": [3],
-        "trip_distance": [2.5],
-    })
+    df = pd.DataFrame(
+        {
+            "PULocationID": [1],
+            "DOLocationID": [3],
+            "trip_distance": [2.5],
+        }
+    )
     X = feature_engineer.inference(df)
 
     # Check the inference result
     assert X.shape[0] == 1  # One row of data should be returned
+
 
 def test_new_data_inference(new_data, feature_engineer):
     """
     Test that new data can be processed for inference.
     """
     # Fit the model first to create the DictVectorizer
-    feature_engineer.fit_transform(pd.DataFrame({
-        "tpep_pickup_datetime": ["2022-01-01 08:00:00"],
-        "tpep_dropoff_datetime": ["2022-01-01 08:30:00"],
-        "Airport_fee": [1.5],
-        "PULocationID": [1],
-        "DOLocationID": [3],
-        "trip_distance": [2.5],
-    }))
+    feature_engineer.fit_transform(
+        pd.DataFrame(
+            {
+                "tpep_pickup_datetime": ["2022-01-01 08:00:00"],
+                "tpep_dropoff_datetime": ["2022-01-01 08:30:00"],
+                "Airport_fee": [1.5],
+                "PULocationID": [1],
+                "DOLocationID": [3],
+                "trip_distance": [2.5],
+            }
+        )
+    )
 
     # Create the new data DataFrame
     df = pd.DataFrame(new_data)

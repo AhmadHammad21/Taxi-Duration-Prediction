@@ -1,12 +1,9 @@
-import time
 import pandas as pd
-import numpy as np
 import tempfile
 from pathlib import Path
 from src.data_pulling.read_data import (
     load_and_concat_parquet_files,
     load_train_test,
-    save_processed_data,
 )
 
 
@@ -20,15 +17,19 @@ def test_load_and_concat_parquet_files():
         df2.to_parquet(tmp_path / "file2.parquet")
 
         result = load_and_concat_parquet_files(tmp_path)
-        
+
         # Since files are loaded in alphabetical order (file1, file2),
         # the result should be df1 + df2
         expected = pd.concat([df1, df2], ignore_index=True)
-        
+
         # Sort both DataFrames by all columns to ensure consistent comparison
-        result_sorted = result.sort_values(by=list(result.columns)).reset_index(drop=True)
-        expected_sorted = expected.sort_values(by=list(expected.columns)).reset_index(drop=True)
-        
+        result_sorted = result.sort_values(by=list(result.columns)).reset_index(
+            drop=True
+        )
+        expected_sorted = expected.sort_values(by=list(expected.columns)).reset_index(
+            drop=True
+        )
+
         pd.testing.assert_frame_equal(result_sorted, expected_sorted)
 
 

@@ -4,6 +4,7 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from loguru import logger
 
+
 class DataDownloader:
     def __init__(self, settings):
         self.settings = settings
@@ -13,14 +14,13 @@ class DataDownloader:
         self.test_dir.mkdir(parents=True, exist_ok=True)
 
     def generate_month_range(self, start: str, end: str):
-
         start_date = datetime.strptime(start, "%Y-%m")
         end_date = datetime.strptime(end, "%Y-%m")
 
         # If start and end are the same, return just that month
         if start_date == end_date:
             return [start]
-        
+
         months = []
         current = start_date
         while current <= end_date:
@@ -52,13 +52,12 @@ class DataDownloader:
         self.download_split(
             self.settings.TRAINING_DATA_DATE["start"],
             self.settings.TRAINING_DATA_DATE["end"],
-            self.train_dir
+            self.train_dir,
         )
 
         logger.info("📥 Downloading testing data...")
         self.download_split(
             self.settings.TESTING_DATA_DATE["start"],
             self.settings.TESTING_DATA_DATE["end"],
-            self.test_dir
+            self.test_dir,
         )
-
