@@ -27,12 +27,12 @@ dependencies = [
     "coverage>=7.4.0",
     "mangum>=0.19.0",
     "locust>=2.37.14",
+    "ruff>=0.12.4",
 ]
 
 [project.optional-dependencies]
 
 dev = [
-    "ipykernel>=6.29.5",
-    "ruff>=0.12.4",
+    "ipykernel>=6.29.5"
 ]
 
