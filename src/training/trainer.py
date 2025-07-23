@@ -9,8 +9,11 @@ from loguru import logger
 
 
 class ModelTrainer:
-    def __init__(self, experiment_name: str = "nyc-taxi-experiment",
-                 tracking_uri: str = "sqlite:///mlflow.db"):
+    def __init__(
+        self,
+        experiment_name: str = "nyc-taxi-experiment",
+        tracking_uri: str = "sqlite:///mlflow.db",
+    ):
         self.experiment_name = experiment_name
         self.tracking_uri = tracking_uri
 
@@ -29,18 +32,22 @@ class ModelTrainer:
             y_pred_train = model.predict(X_train)
 
             log_regression_metrics_run(
-                y_true=y_train, predictions=y_pred_train,
-                prefix="train", n_features=X_train.shape[1]
+                y_true=y_train,
+                predictions=y_pred_train,
+                prefix="train",
+                n_features=X_train.shape[1],
             )
             log_regression_metrics_run(
-                y_true=y_test, predictions=y_pred_test,
-                prefix="test", n_features=X_train.shape[1]
+                y_true=y_test,
+                predictions=y_pred_test,
+                prefix="test",
+                n_features=X_train.shape[1],
             )
 
             mlflow.sklearn.log_model(
                 sk_model=model,
                 artifact_path=model_name,
-                registered_model_name=model_name
+                registered_model_name=model_name,
             )
 
     def _save_best_model_info(self):
@@ -50,7 +57,7 @@ class ModelTrainer:
         metadata = {
             "model_name": model_name,
             "run_id": info["run_id"],
-            "mae": info["mae"]
+            "mae": info["mae"],
         }
 
         Path("artifacts").mkdir(exist_ok=True)

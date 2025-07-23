@@ -4,7 +4,7 @@ import pandas as pd
 from src.config.settings import AppSettings
 from src.data_pulling.download_data import DataDownloader
 import tempfile
-import os
+
 
 # Fixture to initialize the downloader with real settings
 @pytest.fixture
@@ -17,15 +17,22 @@ def mock_settings():
     mock.TESTING_DATA_DATE = {"start": "2022-04", "end": "2022-06"}
     return mock
 
+
 # Fixture to initialize the downloader instance
 @pytest.fixture
 def downloader(mock_settings):
     return DataDownloader(settings=mock_settings)
 
+
 # Test for generate_month_range
 def test_generate_month_range(downloader):
     assert downloader.generate_month_range("2022-01", "2022-01") == ["2022-01"]
-    assert downloader.generate_month_range("2022-01", "2022-03") == ["2022-01", "2022-02", "2022-03"]
+    assert downloader.generate_month_range("2022-01", "2022-03") == [
+        "2022-01",
+        "2022-02",
+        "2022-03",
+    ]
+
 
 # Test for download_and_save_parquet_file (downloading one month)
 def test_download_and_save_parquet_file(downloader):
@@ -45,6 +52,7 @@ def test_download_and_save_parquet_file(downloader):
         df = pd.read_parquet(downloaded_file)
         assert not df.empty  # Verify that the dataframe is not empty
 
+
 # Test for download_split (downloading one month)
 def test_download_split(downloader):
     # Use a temporary directory to avoid file system conflicts
@@ -57,6 +65,7 @@ def test_download_split(downloader):
         # Verify that the file for January 2022 is downloaded
         file_path = tmp_path / "yellow_tripdata_2022-01.parquet"
         assert file_path.exists()
+
 
 # Test for download_all (downloading one month for both train and test)
 def test_download_all(downloader):

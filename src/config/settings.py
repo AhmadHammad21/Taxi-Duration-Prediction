@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from dataclasses import dataclass, field
 
 
@@ -12,15 +11,19 @@ class AppSettings:
 
     DATA_URL = "https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_{year_month}.parquet"
 
-    TRAINING_DATA_DATE: dict = field(default_factory=lambda: {
-        "start": "2024-01",
-        "end": "2024-01" # Inclusive
-    })
+    TRAINING_DATA_DATE: dict = field(
+        default_factory=lambda: {
+            "start": "2024-01",
+            "end": "2024-01",  # Inclusive
+        }
+    )
 
-    TESTING_DATA_DATE: dict = field(default_factory=lambda: {
-        "start": "2024-02",
-        "end": "2024-02" # Inclusive
-    })
+    TESTING_DATA_DATE: dict = field(
+        default_factory=lambda: {
+            "start": "2024-02",
+            "end": "2024-02",  # Inclusive
+        }
+    )
 
     # # ================================ LLM Settings ================================
     # GENERATION_MODEL_ID: str = "gpt-4o-mini"
@@ -42,11 +45,10 @@ class AppSettings:
     # # VECTOR_DB_BACKEND="QDRANT"
     # # VECTOR_DB_PATH="qdrant_db"
     # # VECTOR_DB_DISTANCE_METHOD="cosine"
-    # VECTOR_STORE_PATH: str = "./store/faiss_index" # ../ because we go into src directory 
+    # VECTOR_STORE_PATH: str = "./store/faiss_index" # ../ because we go into src directory
     # TOP_SIMILARITY_K: int = 3
     # CHUNK_SIZE: int = 1000
     # CHUNK_OVERLAP: int = 200
-
 
     # # ================================ Template Configs ================================
     # PRIMARY_LANG = "ar"
@@ -57,7 +59,6 @@ class AppSettings:
 
     # # MONGODB_URL="mongodb://admin:admin@localhost:27007"
     # # MONGODB_DATABASE="mini-rag"
-
 
 
 settings = AppSettings()

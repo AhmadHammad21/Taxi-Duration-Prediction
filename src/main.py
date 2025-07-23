@@ -19,9 +19,7 @@ if __name__ == "__main__":
     downloader.download_all()
 
     # Loading Data
-    train_df, test_df = load_train_test(
-        raw_data_directory=settings.RAW_DATA_DIRECTORY
-    )
+    train_df, test_df = load_train_test(raw_data_directory=settings.RAW_DATA_DIRECTORY)
 
     # Feature Engineering
     numerical = ["trip_distance"]
@@ -34,21 +32,18 @@ if __name__ == "__main__":
     # Train and test df assumed to be loaded
     X_train, y_train = preprocessor.fit_transform(train_df)
     X_test, y_test = preprocessor.transform(test_df)
-    
+
     processed_dir = Path(settings.PROCESSED_DATA_DIRECTORY)
     # Saving the processed data
     save_processed_data(
         X=X_train,
         y=y_train,
         filename="train_processed_data.npz",
-        output_dir=processed_dir
+        output_dir=processed_dir,
     )
 
     save_processed_data(
-        X=X_test,
-        y=y_test,
-        filename="test_processed_data.npz",
-        output_dir=processed_dir
+        X=X_test, y=y_test, filename="test_processed_data.npz", output_dir=processed_dir
     )
 
     # Training Experiments
@@ -60,7 +55,9 @@ if __name__ == "__main__":
     }
 
     trainer = MultiModelTrainer(experiment_name=experiment_name)
-    trainer.train_all(models=models, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test)
+    trainer.train_all(
+        models=models, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
 
     model_history = ModelHistory(experiment_name)
 
