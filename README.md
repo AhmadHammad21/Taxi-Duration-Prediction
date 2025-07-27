@@ -152,6 +152,10 @@ This project solves the **taxi duration prediction problem** for NYC's transport
 |----------|------------|----------|
 | **Package Management** | UV (Python) | Fast dependency management |
 | **Testing** | PyTest | Unit and integration testing |
+| **Code Coverage** | Codecov | Test coverage analysis and reporting |
+| **Code Formatting** | Ruff | Fast Python linter and formatter |
+| **Security Scanning** | Bandit, Safety | Static security analysis and vulnerability detection |
+| **Container Security** | Trivy | Container image vulnerability scanning |
 | **Logging** | Loguru | Structured application logging |
 | **Configuration** | Pydantic Settings | Environment-based configuration |
 | **Code Quality** | Type Hints, Dataclasses | Code maintainability and safety |
