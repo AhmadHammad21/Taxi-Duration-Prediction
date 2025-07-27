@@ -64,6 +64,106 @@ This project solves the **taxi duration prediction problem** for NYC's transport
 - **Availability**: 99.9% uptime SLA
 - **Cost Efficiency**: 60% cost reduction with serverless architecture
 
+## 🏗️ System Architecture
+
+### **MLOps Pipeline Flow**
+```
+                    📊 NYC TLC Data Source
+                             │
+                             ▼
+                    🔄 Data Ingestion Pipeline
+                             │
+                             ▼
+                    🔧 Feature Engineering
+                             │
+                             ▼
+                    🎯 Model Training & Evaluation
+                             │
+                             ▼
+                    📋 MLflow Experiment Tracking
+                             │
+                             ▼
+                    📦 Model Registry
+                             │
+                             ▼
+                    🚀 Model Deployment
+                        ┌─────┼─────┐
+                        │         │         │
+                        ▼         ▼         ▼
+                🖥️ EC2      ☁️ Lambda   🐳 Docker
+                Deployment  Deployment  Container
+                        │         │         │
+                        ▼         ▼         ▼
+                🌐 FastAPI  ⚡ Serverless 🔄 CI/CD
+                  Server      API      Pipeline
+                        │         │         │
+                        └───────┼───────┘
+                                │
+                                ▼
+                    📊 Production Predictions
+                                │
+                                ▼
+                    📈 Monitoring & Analytics
+```
+
+### **Data Flow Architecture**
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   Data Source   │───▶│  Feature Engine  │───▶│  ML Training    │
+│  (NYC TLC API)  │    │   (Pandas +      │    │   (MLflow +     │
+│                 │    │   Custom Logic)  │    │   Multi-Algo)   │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+                                                         │
+                                                         ▼
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   Predictions   │◀───│  FastAPI Server  │◀───│  Model Registry │
+│   (JSON/REST)   │    │  (Production)    │    │   (MLflow)      │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+```
+
+## 🛠️ Technology Stack & Tools
+
+### **Core ML & Data Processing**
+| Category | Technology | Purpose |
+|----------|------------|----------|
+| **ML Framework** | Scikit-learn, XGBoost, LightGBM | Model training and evaluation |
+| **Data Processing** | Pandas, NumPy | Data manipulation and feature engineering |
+| **Experiment Tracking** | MLflow | Model versioning, metrics tracking, registry |
+| **Feature Engineering** | Custom Pipeline + DictVectorizer | Automated feature transformation |
+
+### **API & Web Services**
+| Category | Technology | Purpose |
+|----------|------------|----------|
+| **API Framework** | FastAPI | High-performance REST API development |
+| **API Documentation** | OpenAPI/Swagger | Automatic API documentation |
+| **Data Validation** | Pydantic | Request/response schema validation |
+| **ASGI Server** | Uvicorn | Production ASGI server |
+
+### **DevOps & Infrastructure**
+| Category | Technology | Purpose |
+|----------|------------|----------|
+| **Containerization** | Docker, Docker Compose | Application packaging and orchestration |
+| **CI/CD** | GitHub Actions | Automated testing and deployment |
+| **Cloud Deployment** | AWS Lambda, EC2 | Serverless and traditional hosting |
+| **Infrastructure** | AWS CLI, Boto3 | Cloud resource management |
+
+### **Development & Quality**
+| Category | Technology | Purpose |
+|----------|------------|----------|
+| **Package Management** | UV (Python) | Fast dependency management |
+| **Testing** | PyTest | Unit and integration testing |
+| **Logging** | Loguru | Structured application logging |
+| **Configuration** | Pydantic Settings | Environment-based configuration |
+| **Code Quality** | Type Hints, Dataclasses | Code maintainability and safety |
+
+### **Monitoring & Observability**
+| Category | Technology | Purpose |
+|----------|------------|----------|
+| **Application Monitoring** | Custom metrics + FastAPI | Performance and health monitoring |
+| **Model Monitoring** | MLflow Tracking | Model performance and drift detection |
+| **Error Tracking** | Structured logging | Production error monitoring |
+| **Health Checks** | FastAPI endpoints | Service availability monitoring |
+
 ## 🚀 Quick Start & Deployment
 
 ### Prerequisites
@@ -279,13 +379,13 @@ This rapid development cycle demonstrates:
 - ✅ **Containerization**: Docker and Docker Compose setup
 - ✅ **Cloud Deployment**: EC2 traditional infrastructure option
 - ✅ **Serverless Deployment**: AWS Lambda cost-optimized option
+- ✅ **Architecture Diagrams**: Visual system flow documentation
 
 ### **🚧 Future Enhancement Pipeline**
 - [ ] **Data Version Control**: DVC implementation for data lineage
 - [ ] **Container Orchestration**: ECS + Fargate enterprise deployment
 - [ ] **Advanced Monitoring**: Grafana and Prometheus integration
 - [ ] **Kubernetes Support**: Cloud-native orchestration
-- [ ] **Architecture Diagrams**: Visual system flow documentation
 - [ ] **Cloud Migration**: Full cloud-native data and model storage
 - [ ] **Model Registry Enhancement**: Advanced MLflow model management
 - [ ] **Model Drift Detection**: Automated performance degradation alerts
