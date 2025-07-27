@@ -2,6 +2,7 @@ import os
 import pickle
 import pandas as pd
 from loguru import logger
+from ..config.settings import settings
 from sklearn.linear_model import LinearRegression
 
 
@@ -9,7 +10,7 @@ def load_simple_model():
     """Load model from pickle file - no MLflow dependencies"""
     try:
         # Try to load from pickle file
-        model_path = "src/artifacts/simple_model.pkl"
+        model_path = settings.SIMPLE_MODEL_PATH
         if os.path.exists(model_path):
             with open(model_path, "rb") as f:
                 model = pickle.load(f)

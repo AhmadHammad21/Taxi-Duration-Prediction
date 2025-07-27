@@ -11,6 +11,33 @@ class AppSettings:
 
     DATA_URL = "https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_{year_month}.parquet"
 
+    # Model artifacts paths
+    ARTIFACTS_DIR: str = "src/artifacts"
+    DICT_VECTORIZER_PATH: str = "src/artifacts/dict_vectorizer.pkl"
+    SIMPLE_MODEL_PATH: str = "src/artifacts/simple_model.pkl"
+    BEST_MODEL_METADATA_PATH: str = "src/artifacts/best_model.json"
+    BEST_MODEL_METADATA_PATH_RELATIVE: str = "artifacts/best_model.json"
+    
+    # Feature column names
+    PICKUP_DATETIME_COL: str = "tpep_pickup_datetime"
+    DROPOFF_DATETIME_COL: str = "tpep_dropoff_datetime"
+    AIRPORT_FEE_COL: str = "Airport_fee"
+    PU_LOCATION_COL: str = "PULocationID"
+    DO_LOCATION_COL: str = "DOLocationID"
+    PU_DO_COL: str = "PU_DO"
+    DURATION_COL: str = "duration"
+    
+    # Data processing parameters
+    MIN_DURATION: float = 0
+    MAX_DURATION: float = 90
+    DEFAULT_NUMERICAL_FEATURES: list = field(default_factory=lambda: ["trip_distance"])
+    
+    # MLflow settings
+    MLFLOW_EXPERIMENT_NAME: str = "nyc-taxi-experiment"
+    MLFLOW_TRACKING_URI: str = "sqlite:///mlflow.db"
+    MLRUNS_PATH: str = "mlruns"
+    JSON_INDENT: int = 4
+
     TRAINING_DATA_DATE: dict = field(
         default_factory=lambda: {
             "start": "2024-01",

@@ -3,9 +3,11 @@ import json
 import mlflow
 import pandas as pd
 from loguru import logger
+from ..config.settings import settings
+from ..config.config import config
 
 
-def find_run_path(run_id, mlruns_path="mlruns"):
+def find_run_path(run_id, mlruns_path=settings.MLRUNS_PATH):
     for experiment_id in os.listdir(mlruns_path):
         exp_path = os.path.join(mlruns_path, experiment_id)
         if not os.path.isdir(exp_path):
@@ -17,7 +19,7 @@ def find_run_path(run_id, mlruns_path="mlruns"):
 
 
 def load_best_model_local():
-    with open("src/artifacts/best_model.json") as f:
+    with open(settings.BEST_MODEL_METADATA_PATH) as f:
         metadata = json.load(f)
 
     run_id = metadata["run_id"]
@@ -33,14 +35,14 @@ def load_best_model():
     # Set tracking URI based on environment
     if os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
         # In Lambda, use a dummy tracking URI for inference
-        mlflow.set_tracking_uri("file:///tmp/mlflow")
+        mlflow.set_tracking_uri(config.MLFLOW_TRACKING_URI_LAMBDA)
     else:
-        mlflow.set_tracking_uri("sqlite:///mlflow.db")
+        mlflow.set_tracking_uri(settings.MLFLOW_TRACKING_URI)
 
     # mlflow.set_tracking_uri("http://mlflow:5000")
 
     # Load the best model metadata from the saved file
-    with open("src/artifacts/best_model.json") as f:
+    with open(settings.BEST_MODEL_METADATA_PATH) as f:
         metadata = json.load(f)
     logger.info(f"metadata: {metadata}")
 

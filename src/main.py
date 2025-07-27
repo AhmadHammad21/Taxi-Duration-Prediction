@@ -12,7 +12,6 @@ from utils.logging_config import setup_logging
 
 if __name__ == "__main__":
     setup_logging()
-    experiment_name = "nyc-taxi-experiment"
 
     # Download Data
     downloader = DataDownloader(settings=settings)
@@ -54,12 +53,12 @@ if __name__ == "__main__":
         # "LightGBM": (LGBMRegressor, {"n_estimators": 100, "num_leaves": 31})
     }
 
-    trainer = MultiModelTrainer(experiment_name=experiment_name)
+    trainer = MultiModelTrainer(experiment_name=settings.MLFLOW_EXPERIMENT_NAME)
     trainer.train_all(
         models=models, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
 
-    model_history = ModelHistory(experiment_name)
+    model_history = ModelHistory(experiment_name=settings.MLFLOW_EXPERIMENT_NAME)
 
     # Save best model based on `test_mean_absolute_error`
     model_history.save_best_model_metadata()
