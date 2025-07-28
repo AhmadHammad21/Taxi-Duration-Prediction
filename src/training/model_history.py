@@ -4,7 +4,7 @@ from mlflow import MlflowClient
 from typing import Dict, Any
 import json
 from loguru import logger
-
+from ..config.settings import settings
 
 class ModelHistory:
     def __init__(self, experiment_name: str):
@@ -72,8 +72,8 @@ class ModelHistory:
         Save the best model metadata to a JSON file for later inference.
         """
         best_model = self.get_best_model()
-        with open("src/artifacts/best_model.json", "w") as f:
-            json.dump(best_model, f, indent=4)
+        with open(settings.BEST_MODEL_METADATA_PATH, "w") as f:
+            json.dump(best_model, f, indent=settings.JSON_INDENT)
         logger.info(
             f"🏆 Best model metadata saved: {best_model['model_name']} (MAE: {best_model['test_mean_absolute_error']})"
         )
