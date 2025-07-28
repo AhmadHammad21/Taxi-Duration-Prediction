@@ -4,8 +4,9 @@ from fastapi import APIRouter, Request, status
 from fastapi.responses import JSONResponse
 from ..schemas.taxi_schema import DistanceInput, PredictionInput
 from loguru import logger
+# from prometheus_client import Counter, generate_latest
 
-
+# REQUEST_COUNT = Counter("app_requests_total", "Total HTTP requests")
 taxi_router = APIRouter(prefix="/api/v1", tags=["api_v1"])
 
 
