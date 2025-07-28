@@ -6,13 +6,14 @@ import json
 from pathlib import Path
 from .mlflow_utils import log_regression_metrics_run
 from loguru import logger
+from ..config.settings import settings
 
 
 class ModelTrainer:
     def __init__(
         self,
-        experiment_name: str = "nyc-taxi-experiment",
-        tracking_uri: str = "sqlite:///mlflow.db",
+        experiment_name: str = settings.MLFLOW_EXPERIMENT_NAME,
+        tracking_uri: str = settings.MLFLOW_TRACKING_URI,
     ):
         self.experiment_name = experiment_name
         self.tracking_uri = tracking_uri
@@ -61,8 +62,8 @@ class ModelTrainer:
         }
 
         Path("artifacts").mkdir(exist_ok=True)
-        with open("artifacts/best_model.json", "w") as f:
-            json.dump(metadata, f, indent=4)
+        with open(settings.BEST_MODEL_METADATA_PATH_RELATIVE, "w") as f:
+            json.dump(metadata, f, indent=settings.JSON_INDENT)
 
         logger.info(f"🏆 Best model: {model_name} with MAE: {info['mae']}")
-        logger.info("📁 Saved best model metadata to artifacts/best_model.json")
+        logger.info(f"📁 Saved best model metadata to {settings.BEST_MODEL_METADATA_PATH_RELATIVE}")

@@ -3,6 +3,7 @@ from loguru import logger
 from typing import List, Optional
 from sklearn.feature_extraction import DictVectorizer
 import joblib
+from ..config.settings import settings
 
 
 class FeatureEngineer:
@@ -11,22 +12,22 @@ class FeatureEngineer:
     """
 
     # Constants for feature names
-    PICKUP_DATETIME = "tpep_pickup_datetime"
-    DROPOFF_DATETIME = "tpep_dropoff_datetime"
-    AIRPORT_FEE = "Airport_fee"
-    PU = "PULocationID"
-    DO = "DOLocationID"
-    PU_DO = "PU_DO"
-    DURATION = "duration"
+    PICKUP_DATETIME = settings.PICKUP_DATETIME_COL
+    DROPOFF_DATETIME = settings.DROPOFF_DATETIME_COL
+    AIRPORT_FEE = settings.AIRPORT_FEE_COL
+    PU = settings.PU_LOCATION_COL
+    DO = settings.DO_LOCATION_COL
+    PU_DO = settings.PU_DO_COL
+    DURATION = settings.DURATION_COL
 
     def __init__(
         self,
         numerical: List[str] = None,
         categorical: List[str] = None,
         target: str = DURATION,
-        dv_path: str = "src/artifacts/dict_vectorizer.pkl",  # Path to save the DictVectorizer
+        dv_path: str = settings.DICT_VECTORIZER_PATH,  # Path to save the DictVectorizer
     ):
-        self.numerical = numerical or ["trip_distance"]
+        self.numerical = numerical or settings.DEFAULT_NUMERICAL_FEATURES
         self.categorical = categorical or [self.PU_DO]
         self.target = target
         self.cols = self.numerical + self.categorical + [self.target]
@@ -49,7 +50,7 @@ class FeatureEngineer:
         ).dt.total_seconds() / 60
 
         logger.info("Filtering out trips with invalid durations...")
-        df = df.query("duration > 0 and duration <= 90").reset_index(drop=True)
+        df = df.query(f"duration > {settings.MIN_DURATION} and duration <= {settings.MAX_DURATION}").reset_index(drop=True)
 
         logger.info("Creating PU_DO categorical feature...")
         df[self.PU] = df[self.PU].astype(str)
