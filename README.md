@@ -163,10 +163,12 @@ This project solves the **taxi duration prediction problem** for NYC's transport
 ### **Monitoring & Observability**
 | Category | Technology | Purpose |
 |----------|------------|----------|
-| **Application Monitoring** | Custom metrics + FastAPI | Performance and health monitoring |
-| **Model Monitoring** | MLflow Tracking | Model performance and drift detection |
-| **Error Tracking** | Structured logging | Production error monitoring |
-| **Health Checks** | FastAPI endpoints | Service availability monitoring |
+| **Metrics Collection** | Prometheus | Scrapes and stores time-series metrics (request rate, latency, errors) |
+| **Visualization** | Grafana | Auto-provisioned dashboards: API Health + Model Performance |
+| **Alerting** | Prometheus Alert Rules | 5 rules — high error rate, p95 latency, service down, prediction errors, duration drift |
+| **Drift Detection** | Evidently | Compares production input distributions against training data, HTML report |
+| **Error Tracking** | Structured logging (Loguru) | Production error monitoring with rotation |
+| **Experiment Tracking** | MLflow | Model performance and versioning |
 
 ## 🚀 Quick Start & Deployment
 
@@ -247,17 +249,28 @@ docker compose up --build
 This will start:
 - **FastAPI server** at http://localhost:8000
 - **MLflow server** at http://localhost:5000
+- **Prometheus** at http://localhost:9090
+- **Grafana** at http://localhost:3000 (login: admin / admin)
 
 To stop the services:
 ```bash
 docker-compose down
 ```
-**Services Deployed**:
+
+**Services:**
 - 🚀 **API Server**: http://localhost:8000/docs
 - 📋 **MLflow UI**: http://localhost:5000
-- ❤️ **Health Check**: http://localhost:8000/health
+- 📊 **Prometheus**: http://localhost:9090/alerts
+- 📈 **Grafana**: http://localhost:3000 — API Health & Model Performance dashboards pre-loaded
 
-**Benefits**: 99.9% uptime, auto-recovery, load balancing
+**Drift Detection:**
+```bash
+# After sending 50+ requests to /predict:
+uv run python -m src.monitoring.drift_report
+# Opens reports/drift_report.html
+```
+
+**Benefits**: Full observability stack — metrics, dashboards, alerting, and drift detection out of the box
 
 
 ## 📈 MLOps Architecture & CI/CD Pipeline
@@ -301,18 +314,25 @@ Built following **software engineering best practices** and **MLOps principles**
 ```
 taxi-duration-prediction/
 ├── src/                     # 💻 Core MLOps Platform
-│   ├── config/              # ⚙️ Centralized Configuration Management
+│   ├── config/              # ⚙️ Centralized Configuration + prometheus.yml
 │   ├── data_pulling/        # 📊 Data Engineering Pipeline
 │   ├── features/            # 🔧 Feature Engineering & Preprocessing
 │   ├── training/            # 🎯 ML Model Training & Evaluation
 │   ├── inference/           # 🚀 Production Inference Engine
+│   ├── monitoring/          # 📈 Drift Detection & Prediction Logger
 │   ├── routes/              # 🌐 RESTful API Endpoints
 │   ├── schemas/             # 📝 Data Validation & Type Safety
+│   ├── metrics.py           # 📊 Centralized Prometheus Metrics Registry
 │   └── utils/               # 🔧 Shared Utilities & Helpers
+├── grafana/
+│   ├── provisioning/        # 🔌 Auto-provisioned datasource & dashboard config
+│   └── dashboards/          # 📊 API Health + Model Performance JSON dashboards
+├── prometheus/
+│   └── alerts.yml           # 🚨 Alert rules (error rate, latency, service down, drift)
 ├── tests/                   # ✅ Comprehensive Test Suite
 ├── .github/workflows/       # 🔄 CI/CD Automation
-├── docker-compose.yml       # 🐳 Multi-Service Orchestration
-└── pyproject.toml           # 📦 Modern Dependency Management
+├── docker-compose.yml       # 🐳 Multi-Service Orchestration (FastAPI, MLflow, Prometheus, Grafana)
+└── pyproject.toml           # 📦 Modern Dependency Management (uv)
 ```
 
 ### **Key Architectural Decisions**
@@ -333,14 +353,15 @@ taxi-duration-prediction/
 - **CI/CD Automation**: GitHub Actions with multi-environment deployment
 - **Containerization**: Docker and Docker Compose for consistent environments
 - **Multi-Cloud Deployment**: EC2 traditional and AWS Lambda serverless options
-- **Monitoring & Logging**: Structured logging with performance tracking
+- **Monitoring & Logging**: Prometheus metrics, Grafana dashboards, alert rules, structured logging
+- **Drift Detection**: Evidently-based data drift reports comparing production inputs to training data
 - **Configuration Management**: Centralized, environment-specific settings
 
 ### **🚀 Future Enhancements Roadmap**
 - **Container Orchestration**: Kubernetes and ECS/Fargate deployment
-- **Advanced Monitoring**: Grafana and Prometheus integration
 - **Data Versioning**: DVC implementation for data lineage
 - **Model Governance**: Advanced A/B testing and canary deployments
+- **Automated Retraining**: Scheduled GitHub Actions workflow triggered by drift detection
 
 ## 📊 Business Impact & ROI
 
@@ -388,11 +409,13 @@ This rapid development cycle demonstrates:
 ### **🚧 Future Enhancement Pipeline**
 - [ ] **Data Version Control**: DVC implementation for data lineage
 - [ ] **Container Orchestration**: ECS + Fargate enterprise deployment
-- [ ] **Advanced Monitoring**: Grafana and Prometheus integration
+- [x] **Monitoring Stack**: Prometheus + Grafana with auto-provisioned dashboards
+- [x] **Alerting Rules**: High error rate, latency p95, service down, prediction errors
+- [x] **Data Drift Detection**: Evidently drift reports comparing production vs training data
 - [ ] **Kubernetes Support**: Cloud-native orchestration
 - [ ] **Cloud Migration**: Full cloud-native data and model storage
 - [ ] **Model Registry Enhancement**: Advanced MLflow model management
-- [ ] **Model Drift Detection**: Automated performance degradation alerts
+- [ ] **Automated Retraining**: Drift-triggered scheduled retraining pipeline
 - [ ] **A/B Testing Framework**: Canary deployments and traffic splitting
 - [ ] **Real-time Streaming**: Apache Kafka for live prediction pipelines
 - [ ] **Multi-Region Deployment**: Global load balancing and failover

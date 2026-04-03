@@ -1,8 +1,8 @@
 # MLOps Project Evaluation - Taxi Duration Prediction
 
-**Date**: 2025-12-20
-**Branch Evaluated**: monitoring
-**Overall Rating**: **7.5/10** - Strong MLOps Foundation
+**Date**: 2026-04-03
+**Branch Evaluated**: dev (post-monitoring merge)
+**Overall Rating**: **8.5/10** - Production-Ready MLOps Platform
 
 ---
 
@@ -14,7 +14,7 @@
 | **Experiment Tracking** | 8/10 | MLflow well-integrated, automatic logging, best model selection |
 | **Testing** | 7/10 | Unit, integration, and performance tests present, but coverage gaps |
 | **Containerization** | 9/10 | Multiple Dockerfiles, docker-compose orchestration, Lambda support |
-| **Monitoring** | 6/10 | Infrastructure present (Prometheus/Grafana) but dashboards incomplete |
+| **Monitoring** | 9/10 | Prometheus metrics, Grafana dashboards (auto-provisioned), 5 alert rules, Evidently drift detection |
 | **Code Quality** | 7/10 | Linting, security scanning, good structure, missing type checking |
 | **Documentation** | 8/10 | Excellent deployment docs, good README, missing model cards |
 | **Data Management** | 5/10 | Basic pipeline, no versioning (DVC), no quality frameworks |
@@ -59,12 +59,14 @@
 - Performance tests with Locust framework (`tests/performance/`)
 - pytest with coverage reporting
 
-### 6. Monitoring Stack
-- Prometheus metrics scraping (5s interval)
-- Grafana visualization setup
+### 6. Complete Monitoring Stack
+- Prometheus scraping at 5s interval with explicit `metrics_path`
+- Grafana auto-provisioned via `grafana/provisioning/` — no manual setup needed
+- Two dashboards: **API Health** (request rate, p50/p95 latency, error rate) and **Model Performance** (predictions/s, duration distribution, rolling average)
+- 5 alert rules across two groups: `HighErrorRate`, `HighLatencyP95`, `ServiceDown`, `HighPredictionErrorRate`, `UnusuallyHighPredictedDuration`
+- Centralized Prometheus metrics registry (`src/metrics.py`) — request counter, latency histogram, prediction value histogram, error counter — all with labels
+- **Evidently data drift detection**: prediction logger captures every request, `drift_report.py` compares against training data and generates HTML report
 - Structured logging with Loguru (rotation, retention)
-- MLflow UI for experiment visualization
-- Metrics exposure endpoint (`/api/v1/metrics`)
 
 ### 7. Modern Tooling
 - FastAPI for REST API
@@ -95,11 +97,10 @@
 - Risk: Environment inconsistencies, difficult disaster recovery
 - No automated infrastructure provisioning
 
-### 4. Grafana Dashboards Not Defined
-- Infrastructure present but no pre-configured dashboards
-- No alerting rules defined
-- Metrics exposed but not visualized
-- No saved dashboard definitions in repository
+### 4. ~~Grafana Dashboards Not Defined~~ ✅ RESOLVED
+- Auto-provisioned API Health and Model Performance dashboards
+- 5 Prometheus alert rules defined in `prometheus/alerts.yml`
+- Evidently drift detection with HTML report output
 
 ### 5. Limited Model Governance
 - No model cards or documentation templates
@@ -119,11 +120,11 @@
 - Reduced type safety guarantees
 - Missing static type analysis in CI/CD
 
-### 8. Limited Observability
-- No distributed tracing
-- No custom business metrics (prediction latency distribution, error rates by location)
-- No alerting on model degradation
-- Limited production monitoring dashboards
+### 8. ~~Limited Observability~~ ✅ RESOLVED
+- Custom metrics: request count by endpoint/status, latency histogram, prediction value histogram, error counter
+- Alert rules cover model degradation (high prediction error rate, unusual duration averages)
+- Two Grafana dashboards provide full production visibility
+- Remaining gap: no distributed tracing (OpenTelemetry/Jaeger)
 
 ### 9. Code Quality Issues
 - Some models commented out in `multi_model_trainer.py`
@@ -219,7 +220,7 @@ resource "aws_iam_role" "lambda_role" {
 
 ---
 
-#### 3. Grafana Dashboards
+#### 3. ~~Grafana Dashboards~~ ✅ DONE
 ```json
 {
   "dashboard": {
@@ -526,7 +527,7 @@ class TestModelBehavior:
 
 ---
 
-#### 9. Model Performance Monitoring (Evidently)
+#### 9. ~~Model Performance Monitoring (Evidently)~~ ✅ DONE
 ```python
 # src/monitoring/drift_detection.py
 from evidently import ColumnMapping
@@ -1021,7 +1022,7 @@ To reach **elite MLOps maturity**, prioritize these enhancements:
 | Containerization | ✅ Excellent | Required | None |
 | Experiment Tracking | ✅ Good | Required | Minor |
 | Testing | ✅ Good | Required | Coverage gaps |
-| Monitoring | ⚠️ Partial | Required | Dashboards missing |
+| Monitoring | ✅ Complete | Required | None — Prometheus, Grafana, alerts, Evidently |
 | Data Versioning | ❌ Missing | Required | Critical gap |
 | IaC | ⚠️ Partial | Recommended | Moderate gap |
 | Feature Store | ❌ Missing | Recommended | Low priority |
@@ -1031,13 +1032,16 @@ To reach **elite MLOps maturity**, prioritize these enhancements:
 
 ### Final Verdict
 
-**Rating: 7.5/10** - This project is **production-ready** with room for MLOps excellence.
+**Rating: 8.5/10** - This project is a **complete MLOps platform** demonstrating the full ML lifecycle.
 
-**Strengths**: Deployment automation, experiment tracking, clean architecture
-**Opportunities**: Data governance, complete observability, infrastructure codification
+**Strengths**: Deployment automation, experiment tracking, clean architecture, complete observability stack (Prometheus + Grafana + Evidently)
+**Remaining Opportunities**: Data versioning (DVC), Infrastructure as Code (Terraform), A/B testing
 
-**Recommendation**: Implement high-priority enhancements to achieve **9/10** maturity and set the standard for MLOps best practices.
+**Critical Path to 9.5/10**:
+1. Data Versioning (DVC) — reproducibility
+2. Infrastructure as Code (Terraform) — production reliability
+3. Automated retraining triggered by drift detection
 
 ---
 
-*Evaluation conducted on 2025-12-20 on the `monitoring` branch*
+*Evaluation last updated 2026-04-03 — `dev` branch (post-monitoring merge)*
