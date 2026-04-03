@@ -175,3 +175,6 @@ reports/
 
 # Prediction logs
 data/predictions/
+
+# Application logs
+logs/
