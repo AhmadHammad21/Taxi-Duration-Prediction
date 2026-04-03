@@ -306,6 +306,18 @@ This project demonstrates **production-ready MLOps practices** with automated wo
 - Request/response validation
 - Real-time performance metrics
 
+#### **Grafana — Model Performance Dashboard**
+![Model Performance Dashboard](images/model_performance_dashboard.png)
+- Live predictions/s, total predictions, avg predicted duration
+- Predicted duration distribution over time
+- Auto-provisioned on `docker-compose up` — no manual setup
+
+#### **Evidently — Data Drift Report**
+![Data Drift Report](images/data_drift_report.png)
+- Compares production input distributions against training data
+- Per-feature drift scores using Wasserstein distance
+- Flags when the model is seeing data it wasn't trained on
+
 ## 💼 Enterprise-Grade Project Architecture
 
 ### **Modular MLOps Design**
