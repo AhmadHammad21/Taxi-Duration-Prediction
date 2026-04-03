@@ -29,6 +29,7 @@ dependencies = [
     "locust>=2.37.14",
     "ruff>=0.12.4",
     "prometheus-client>=0.22.1",
+    "evidently>=0.7.21",
 ]
 
 [project.optional-dependencies]

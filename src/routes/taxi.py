@@ -5,6 +5,7 @@ from fastapi import APIRouter, Request, status
 from fastapi.responses import JSONResponse
 from ..schemas.taxi_schema import DistanceInput, PredictionInput
 from ..metrics import REQUEST_COUNT, REQUEST_LATENCY, PREDICTION_VALUE, PREDICTION_ERRORS_TOTAL
+from ..monitoring.prediction_logger import log_prediction
 from loguru import logger
 
 taxi_router = APIRouter(prefix="/api/v1", tags=["api_v1"])
@@ -42,6 +43,7 @@ async def predict(request: Request, input_data: PredictionInput):
         REQUEST_COUNT.labels(method="POST", endpoint=endpoint, status_code=200).inc()
         REQUEST_LATENCY.labels(endpoint=endpoint).observe(time.perf_counter() - start)
         PREDICTION_VALUE.observe(duration_prediction)
+        log_prediction(pu_location_id, du_location_id, trip_distance, duration_prediction)
 
         return JSONResponse(
             status_code=status.HTTP_200_OK,
