@@ -10,6 +10,7 @@ services:
     volumes:
       - ./mlruns:/app/mlruns
       - ./mlflow.db:/app/mlflow.db
+      - ./data/predictions:/app/data/predictions
     depends_on:
       - mlflow
     environment:
@@ -28,3 +29,25 @@ services:
       --default-artifact-root /mlflow/mlruns 
       --host 0.0.0.0 
       --port 5000
+
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./src/config/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus/alerts.yml:/etc/prometheus/alerts.yml
+
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-storage:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+
+volumes:
+  grafana-storage:

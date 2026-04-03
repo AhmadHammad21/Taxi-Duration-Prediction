@@ -1,0 +1,56 @@
+groups:
+  - name: api
+    rules:
+      - alert: HighErrorRate
+        expr: |
+          rate(http_requests_total{status_code=~"4..|5.."}[2m])
+          /
+          rate(http_requests_total[2m]) > 0.05
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate on {{ $labels.endpoint }}"
+          description: "Error rate is {{ $value | humanizePercentage }} over the last 2 minutes."
+
+      - alert: HighLatencyP95
+        expr: |
+          histogram_quantile(0.95, sum by (le, endpoint) (rate(http_request_duration_seconds_bucket[2m]))) > 0.5
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High p95 latency on {{ $labels.endpoint }}"
+          description: "p95 latency is {{ $value | humanizeDuration }} (threshold: 500ms)."
+
+      - alert: ServiceDown
+        expr: up{job="fastapi-app"} == 0
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "FastAPI service is down"
+          description: "The fastapi-app target has been unreachable for more than 30 seconds."
+
+  - name: model
+    rules:
+      - alert: HighPredictionErrorRate
+        expr: rate(prediction_errors_total[2m]) > 0.1
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High prediction error rate on {{ $labels.endpoint }}"
+          description: "Prediction errors are occurring at {{ $value | humanize }} per second."
+
+      - alert: UnusuallyHighPredictedDuration
+        expr: |
+          rate(prediction_duration_minutes_sum[5m])
+          /
+          rate(prediction_duration_minutes_count[5m]) > 90
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Average predicted duration is unusually high"
+          description: "Rolling average prediction is {{ $value | humanize }} minutes (threshold: 90 min)."
