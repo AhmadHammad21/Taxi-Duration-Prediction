@@ -58,11 +58,6 @@ This project solves the **taxi duration prediction problem** for NYC's transport
 - **Best Model**: XGBoost with hyperparameter optimization
 - **Validation**: Time-series cross-validation with 3-month holdout
 
-### Production Metrics
-- **API Latency**: <100ms p95 response time
-- **Throughput**: 1000+ predictions/second
-- **Availability**: 99.9% uptime SLA
-- **Cost Efficiency**: 60% cost reduction with serverless architecture
 
 ## 🏗️ System Architecture
 
@@ -163,101 +158,80 @@ This project solves the **taxi duration prediction problem** for NYC's transport
 ### **Monitoring & Observability**
 | Category | Technology | Purpose |
 |----------|------------|----------|
-| **Application Monitoring** | Custom metrics + FastAPI | Performance and health monitoring |
-| **Model Monitoring** | MLflow Tracking | Model performance and drift detection |
-| **Error Tracking** | Structured logging | Production error monitoring |
-| **Health Checks** | FastAPI endpoints | Service availability monitoring |
+| **Metrics Collection** | Prometheus | Scrapes and stores time-series metrics (request rate, latency, errors) |
+| **Visualization** | Grafana | Auto-provisioned dashboards: API Health + Model Performance |
+| **Alerting** | Prometheus Alert Rules | 5 rules — high error rate, p95 latency, service down, prediction errors, duration drift |
+| **Drift Detection** | Evidently | Compares production input distributions against training data, HTML report |
+| **Error Tracking** | Structured logging (Loguru) | Production error monitoring with rotation |
+| **Experiment Tracking** | MLflow | Model performance and versioning |
 
 ## 🚀 Quick Start & Deployment
 
 ### Prerequisites
-- Python 3.9+
+- Python 3.12+
 - Docker & Docker Compose
-- AWS CLI (for cloud deployment)
-- UV Package Manager (modern Python dependency management)
+- UV package manager — [install here](https://docs.astral.sh/uv/getting-started/installation/)
 
-### Local Development Setup
+---
+
+### 1. Clone & install dependencies
 ```bash
-# Clone repository
 git clone https://github.com/AhmadHammad21/Taxi-Duration-Prediction.git
 cd Taxi-Duration-Prediction
+uv sync
+```
 
-# Install dependencies with UV (faster than pip)
-uv sync --extra dev
+### 2. Train the model
+```bash
+# Downloads NYC TLC data, runs feature engineering, trains models, logs to MLflow
+uv run python -m src.main
+```
+Trained model artifact saved to `src/artifacts/`. MLflow experiments visible at http://localhost:5000 (after step 3).
 
-# Start MLOps stack
+### 3. Start the full stack
+```bash
 docker-compose up --build
 ```
 
-### MLOps Pipeline Execution
+| Service | URL |
+|---|---|
+| FastAPI + Swagger | http://localhost:8000/docs |
+| MLflow UI | http://localhost:5000 |
+| Prometheus | http://localhost:9090/alerts |
+| Grafana (admin/admin) | http://localhost:3000 |
 
-#### 1. **Data Pipeline & Model Training**
+### 4. Make a prediction
 ```bash
-# Windows
-powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-
-# MacOS and Linux
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Syncing the dependencies to your environment (all packages)
-uv sync
-
-# Optional: You can install certain dependencies
-# Optional: Install main + dev dependencies (for basic development)
-uv sync --extra dev
+curl -X POST http://localhost:8000/api/v1/predict \
+  -H "Content-Type: application/json" \
+  -d '{"PULocationID": "132", "DOLocationID": "161"}'
 ```
 
-## Usage
-
-### Run the MLFlow Server
-To track machine learning experiments.
+### 5. Generate a drift report
 ```bash
-# Launch MLflow UI for experiment management
-mlflow ui --backend-store-uri sqlite:///mlflow.db
+# After sending 50+ requests to /predict:
+uv run python -m src.monitoring.drift_report
+# Report saved to reports/drift_report.html
 ```
-**Access**: http://localhost:5000
 
-#### 3. **Production API Server**
+To stop all services:
 ```bash
-# Start FastAPI inference server
-uvicorn src.app:app --reload --host 0.0.0.0 --port 8000
+docker-compose down
 ```
-**API Documentation**: http://localhost:8000/docs
 
 ## 🏗️ Production Deployment Strategies
 
 ### Strategy 1: Traditional Infrastructure (EC2)
-**Use Case**: High-throughput, consistent workloads
+**Use Case**: Full control, persistent MLflow server, easier debugging
 ```bash
-# Containerized deployment
 docker build -t taxi-prediction-api .
 docker run -p 8000:8000 taxi-prediction-api
 ```
-**Benefits**: Predictable costs, full control, persistent storage
+See [DEPLOYMENT.md](DEPLOYMENT.md) for full EC2 setup with security groups and GitHub Actions wiring.
 
-### Strategy 2: Serverless Architecture (AWS Lambda) 
+### Strategy 2: Serverless Architecture (AWS Lambda)
 **Use Case**: Variable traffic, cost optimization
-```bash
-# Build and start the servers
-docker-compose up --build -d # in detached mode
-# OR 
-docker compose up --build 
-```
-
-This will start:
-- **FastAPI server** at http://localhost:8000
-- **MLflow server** at http://localhost:5000
-
-To stop the services:
-```bash
-docker-compose down
-```
-**Services Deployed**:
-- 🚀 **API Server**: http://localhost:8000/docs
-- 📋 **MLflow UI**: http://localhost:5000
-- ❤️ **Health Check**: http://localhost:8000/health
-
-**Benefits**: 99.9% uptime, auto-recovery, load balancing
+See [DEPLOYMENT.md](DEPLOYMENT.md) for Lambda + ECR deployment instructions.
 
 
 ## 📈 MLOps Architecture & CI/CD Pipeline
@@ -293,6 +267,18 @@ This project demonstrates **production-ready MLOps practices** with automated wo
 - Request/response validation
 - Real-time performance metrics
 
+#### **Grafana — Model Performance Dashboard**
+![Model Performance Dashboard](images/model_performance_dashboard.png)
+- Live predictions/s, total predictions, avg predicted duration
+- Predicted duration distribution over time
+- Auto-provisioned on `docker-compose up` — no manual setup
+
+#### **Evidently — Data Drift Report**
+![Data Drift Report](images/data_drift_report.png)
+- Compares production input distributions against training data
+- Per-feature drift scores using Wasserstein distance
+- Flags when the model is seeing data it wasn't trained on
+
 ## 💼 Enterprise-Grade Project Architecture
 
 ### **Modular MLOps Design**
@@ -301,18 +287,25 @@ Built following **software engineering best practices** and **MLOps principles**
 ```
 taxi-duration-prediction/
 ├── src/                     # 💻 Core MLOps Platform
-│   ├── config/              # ⚙️ Centralized Configuration Management
+│   ├── config/              # ⚙️ Centralized Configuration + prometheus.yml
 │   ├── data_pulling/        # 📊 Data Engineering Pipeline
 │   ├── features/            # 🔧 Feature Engineering & Preprocessing
 │   ├── training/            # 🎯 ML Model Training & Evaluation
 │   ├── inference/           # 🚀 Production Inference Engine
+│   ├── monitoring/          # 📈 Drift Detection & Prediction Logger
 │   ├── routes/              # 🌐 RESTful API Endpoints
 │   ├── schemas/             # 📝 Data Validation & Type Safety
+│   ├── metrics.py           # 📊 Centralized Prometheus Metrics Registry
 │   └── utils/               # 🔧 Shared Utilities & Helpers
+├── grafana/
+│   ├── provisioning/        # 🔌 Auto-provisioned datasource & dashboard config
+│   └── dashboards/          # 📊 API Health + Model Performance JSON dashboards
+├── prometheus/
+│   └── alerts.yml           # 🚨 Alert rules (error rate, latency, service down, drift)
 ├── tests/                   # ✅ Comprehensive Test Suite
 ├── .github/workflows/       # 🔄 CI/CD Automation
-├── docker-compose.yml       # 🐳 Multi-Service Orchestration
-└── pyproject.toml           # 📦 Modern Dependency Management
+├── docker-compose.yml       # 🐳 Multi-Service Orchestration (FastAPI, MLflow, Prometheus, Grafana)
+└── pyproject.toml           # 📦 Modern Dependency Management (uv)
 ```
 
 ### **Key Architectural Decisions**
@@ -322,85 +315,28 @@ taxi-duration-prediction/
 - **Test-Driven Development**: Unit, integration, and end-to-end testing
 - **Infrastructure as Code**: Reproducible deployments across environments
 
-## 🎯 MLOps Capabilities Demonstrated
+## 🗺️ Development Roadmap
 
-### **✅ Completed Enterprise Features**
-- **Data Engineering**: Automated ingestion, validation, and processing pipelines
-- **ML Pipeline**: Multi-algorithm training with hyperparameter optimization
-- **Experiment Tracking**: MLflow integration with model registry and versioning
-- **Production APIs**: FastAPI with comprehensive documentation and validation
-- **Testing Framework**: Unit, integration, and end-to-end test coverage
-- **CI/CD Automation**: GitHub Actions with multi-environment deployment
-- **Containerization**: Docker and Docker Compose for consistent environments
-- **Multi-Cloud Deployment**: EC2 traditional and AWS Lambda serverless options
-- **Monitoring & Logging**: Structured logging with performance tracking
-- **Configuration Management**: Centralized, environment-specific settings
-
-### **🚀 Future Enhancements Roadmap**
-- **Container Orchestration**: Kubernetes and ECS/Fargate deployment
-- **Advanced Monitoring**: Grafana and Prometheus integration
-- **Data Versioning**: DVC implementation for data lineage
-- **Model Governance**: Advanced A/B testing and canary deployments
-
-## 📊 Business Impact & ROI
-
-### **Quantifiable Benefits**
-- **60% Cost Reduction** through serverless architecture optimization
-- **99.9% Uptime SLA** with automated failover and recovery
-- **<100ms API Latency** ensuring real-time user experience
-- **15-20% Operational Efficiency** improvement in fleet utilization
-
-### **Technical Excellence**
-- **Enterprise-Grade Architecture** following MLOps best practices
-- **Scalable Infrastructure** supporting 1000+ predictions/second
-- **Automated Quality Assurance** with comprehensive testing pipeline
-- **Production-Ready Deployment** with multiple infrastructure options
-
-## ⏱️ Project Development Timeline
-
-**Total Development Time**: 38 Hours
-
-This rapid development cycle demonstrates:
-- **Efficient MLOps Implementation**: Leveraging modern tools and frameworks
-- **Architectural Planning**: Well-structured approach reducing development overhead
-- **Automation-First Mindset**: CI/CD and containerization from day one
-- **Production-Ready Focus**: Enterprise-grade practices implemented immediately
-
-## 🗺️ Development Roadmap & Feature Status
-
-### **✅ Completed Core Features**
-- ✅ **Project Architecture**: Modular structure with separation of concerns
-- ✅ **Data Pipeline**: Automated download and ingestion from NYC TLC
-- ✅ **Feature Engineering**: Comprehensive preprocessing and transformation
-- ✅ **ML Training Pipeline**: MLflow experiments, artifacts, and model registry
-- ✅ **Inference Engine**: Production-ready prediction service
-- ✅ **REST API**: FastAPI with comprehensive documentation
-- ✅ **Quality Assurance**: Unit and integration testing framework with PyTest
-- ✅ **Configuration Optimization**: Advanced settings management
-- ✅ **Code Quality**: Best practices and professional standards
-- ✅ **Logging Infrastructure**: Structured logging with Loguru
-- ✅ **CI/CD Automation**: GitHub Actions workflows
-- ✅ **Containerization**: Docker and Docker Compose setup
-- ✅ **Cloud Deployment**: EC2 traditional infrastructure option
-- ✅ **Serverless Deployment**: AWS Lambda cost-optimized option
-- ✅ **Architecture Diagrams**: Visual system flow documentation
-
-### **🚧 Future Enhancement Pipeline**
-- [ ] **Data Version Control**: DVC implementation for data lineage
-- [ ] **Container Orchestration**: ECS + Fargate enterprise deployment
-- [ ] **Advanced Monitoring**: Grafana and Prometheus integration
-- [ ] **Kubernetes Support**: Cloud-native orchestration
-- [ ] **Cloud Migration**: Full cloud-native data and model storage
-- [ ] **Model Registry Enhancement**: Advanced MLflow model management
-- [ ] **Model Drift Detection**: Automated performance degradation alerts
+- [x] **Data Pipeline**: Automated download and ingestion from NYC TLC
+- [x] **Feature Engineering**: Preprocessing and transformation pipeline
+- [x] **ML Training Pipeline**: Multi-model training with MLflow experiment tracking
+- [x] **Inference Engine**: Production-ready prediction service
+- [x] **REST API**: FastAPI with Swagger documentation
+- [x] **Quality Assurance**: Unit, integration, and performance tests (Locust)
+- [x] **Logging Infrastructure**: Structured logging with Loguru
+- [x] **CI/CD Automation**: GitHub Actions — Lambda + EC2 workflows, security scanning
+- [x] **Containerization**: Docker and Docker Compose
+- [x] **Cloud Deployment**: EC2 and AWS Lambda serverless options
+- [x] **Monitoring Stack**: Prometheus + Grafana with auto-provisioned dashboards
+- [x] **Alerting Rules**: High error rate, latency p95, service down, prediction errors
+- [x] **Data Drift Detection**: Evidently reports comparing production inputs vs training data
+- [ ] **Data Version Control**: DVC for data lineage and reproducibility
+- [ ] **Automated Retraining**: Drift-triggered scheduled retraining pipeline
 - [ ] **A/B Testing Framework**: Canary deployments and traffic splitting
-- [ ] **Real-time Streaming**: Apache Kafka for live prediction pipelines
-- [ ] **Multi-Region Deployment**: Global load balancing and failover
-- [ ] **Security & Compliance**: RBAC, audit trails, and data encryption
-- [ ] **Auto-scaling**: Dynamic resource allocation based on demand
-- [ ] **Feature Store**: Centralized feature management and serving
-- [ ] **Model Explainability**: SHAP/LIME integration for interpretability
-- [ ] **Hyperparameter Optimization**: Randomized Search with Cross-Validation
+- [ ] **Container Orchestration**: ECS + Fargate or Kubernetes
+- [ ] **Feature Store**: Centralized feature management (Feast)
+- [ ] **Model Explainability**: SHAP/LIME integration
+- [ ] **Infrastructure as Code**: Terraform for AWS resources
 
 ---
 

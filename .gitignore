@@ -169,3 +169,15 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# Evidently drift reports
+reports/
+
+# Prediction logs
+data/predictions/
+
+# Application logs
+logs/
+
+# Local notes (not for repo)
+notes/
