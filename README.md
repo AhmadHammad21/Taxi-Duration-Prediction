@@ -58,11 +58,6 @@ This project solves the **taxi duration prediction problem** for NYC's transport
 - **Best Model**: XGBoost with hyperparameter optimization
 - **Validation**: Time-series cross-validation with 3-month holdout
 
-### Production Metrics
-- **API Latency**: <100ms p95 response time
-- **Throughput**: 1000+ predictions/second
-- **Availability**: 99.9% uptime SLA
-- **Cost Efficiency**: 60% cost reduction with serverless architecture
 
 ## 🏗️ System Architecture
 
@@ -173,104 +168,70 @@ This project solves the **taxi duration prediction problem** for NYC's transport
 ## 🚀 Quick Start & Deployment
 
 ### Prerequisites
-- Python 3.9+
+- Python 3.12+
 - Docker & Docker Compose
-- AWS CLI (for cloud deployment)
-- UV Package Manager (modern Python dependency management)
+- UV package manager — [install here](https://docs.astral.sh/uv/getting-started/installation/)
 
-### Local Development Setup
+---
+
+### 1. Clone & install dependencies
 ```bash
-# Clone repository
 git clone https://github.com/AhmadHammad21/Taxi-Duration-Prediction.git
 cd Taxi-Duration-Prediction
+uv sync
+```
 
-# Install dependencies with UV (faster than pip)
-uv sync --extra dev
+### 2. Train the model
+```bash
+# Downloads NYC TLC data, runs feature engineering, trains models, logs to MLflow
+uv run python -m src.main
+```
+Trained model artifact saved to `src/artifacts/`. MLflow experiments visible at http://localhost:5000 (after step 3).
 
-# Start MLOps stack
+### 3. Start the full stack
+```bash
 docker-compose up --build
 ```
 
-### MLOps Pipeline Execution
+| Service | URL |
+|---|---|
+| FastAPI + Swagger | http://localhost:8000/docs |
+| MLflow UI | http://localhost:5000 |
+| Prometheus | http://localhost:9090/alerts |
+| Grafana (admin/admin) | http://localhost:3000 |
 
-#### 1. **Data Pipeline & Model Training**
+### 4. Make a prediction
 ```bash
-# Windows
-powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-
-# MacOS and Linux
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Syncing the dependencies to your environment (all packages)
-uv sync
-
-# Optional: You can install certain dependencies
-# Optional: Install main + dev dependencies (for basic development)
-uv sync --extra dev
+curl -X POST http://localhost:8000/api/v1/predict \
+  -H "Content-Type: application/json" \
+  -d '{"PULocationID": "132", "DOLocationID": "161"}'
 ```
 
-## Usage
-
-### Run the MLFlow Server
-To track machine learning experiments.
+### 5. Generate a drift report
 ```bash
-# Launch MLflow UI for experiment management
-mlflow ui --backend-store-uri sqlite:///mlflow.db
-```
-**Access**: http://localhost:5000
-
-#### 3. **Production API Server**
-```bash
-# Start FastAPI inference server
-uvicorn src.app:app --reload --host 0.0.0.0 --port 8000
-```
-**API Documentation**: http://localhost:8000/docs
-
-## 🏗️ Production Deployment Strategies
-
-### Strategy 1: Traditional Infrastructure (EC2)
-**Use Case**: High-throughput, consistent workloads
-```bash
-# Containerized deployment
-docker build -t taxi-prediction-api .
-docker run -p 8000:8000 taxi-prediction-api
-```
-**Benefits**: Predictable costs, full control, persistent storage
-
-### Strategy 2: Serverless Architecture (AWS Lambda) 
-**Use Case**: Variable traffic, cost optimization
-```bash
-# Build and start the servers
-docker-compose up --build -d # in detached mode
-# OR 
-docker compose up --build 
+# After sending 50+ requests to /predict:
+uv run python -m src.monitoring.drift_report
+# Report saved to reports/drift_report.html
 ```
 
-This will start:
-- **FastAPI server** at http://localhost:8000
-- **MLflow server** at http://localhost:5000
-- **Prometheus** at http://localhost:9090
-- **Grafana** at http://localhost:3000 (login: admin / admin)
-
-To stop the services:
+To stop all services:
 ```bash
 docker-compose down
 ```
 
-**Services:**
-- 🚀 **API Server**: http://localhost:8000/docs
-- 📋 **MLflow UI**: http://localhost:5000
-- 📊 **Prometheus**: http://localhost:9090/alerts
-- 📈 **Grafana**: http://localhost:3000 — API Health & Model Performance dashboards pre-loaded
+## 🏗️ Production Deployment Strategies
 
-**Drift Detection:**
+### Strategy 1: Traditional Infrastructure (EC2)
+**Use Case**: Full control, persistent MLflow server, easier debugging
 ```bash
-# After sending 50+ requests to /predict:
-uv run python -m src.monitoring.drift_report
-# Opens reports/drift_report.html
+docker build -t taxi-prediction-api .
+docker run -p 8000:8000 taxi-prediction-api
 ```
+See [DEPLOYMENT.md](DEPLOYMENT.md) for full EC2 setup with security groups and GitHub Actions wiring.
 
-**Benefits**: Full observability stack — metrics, dashboards, alerting, and drift detection out of the box
+### Strategy 2: Serverless Architecture (AWS Lambda)
+**Use Case**: Variable traffic, cost optimization
+See [DEPLOYMENT.md](DEPLOYMENT.md) for Lambda + ECR deployment instructions.
 
 
 ## 📈 MLOps Architecture & CI/CD Pipeline
@@ -388,16 +349,6 @@ taxi-duration-prediction/
 - **Scalable Infrastructure** supporting 1000+ predictions/second
 - **Automated Quality Assurance** with comprehensive testing pipeline
 - **Production-Ready Deployment** with multiple infrastructure options
-
-## ⏱️ Project Development Timeline
-
-**Total Development Time**: 38 Hours
-
-This rapid development cycle demonstrates:
-- **Efficient MLOps Implementation**: Leveraging modern tools and frameworks
-- **Architectural Planning**: Well-structured approach reducing development overhead
-- **Automation-First Mindset**: CI/CD and containerization from day one
-- **Production-Ready Focus**: Enterprise-grade practices implemented immediately
 
 ## 🗺️ Development Roadmap & Feature Status
 

@@ -178,3 +178,6 @@ data/predictions/
 
 # Application logs
 logs/
+
+# Local notes (not for repo)
+notes/
