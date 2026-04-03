@@ -68,11 +68,11 @@ def run_drift_report() -> Path:
         sys.exit(1)
 
     report = Report(metrics=[DataDriftPreset()])
-    report.run(reference_data=reference, current_data=current)
+    snapshot = report.run(reference_data=reference, current_data=current)
 
     REPORTS_DIR.mkdir(exist_ok=True)
     output_path = REPORTS_DIR / "drift_report.html"
-    report.save_html(str(output_path))
+    snapshot.save_html(str(output_path))
     logger.info(f"Drift report saved to {output_path}")
     return output_path
 

@@ -10,6 +10,7 @@ services:
     volumes:
       - ./mlruns:/app/mlruns
       - ./mlflow.db:/app/mlflow.db
+      - ./data/predictions:/app/data/predictions
     depends_on:
       - mlflow
     environment:
