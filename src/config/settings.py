@@ -15,8 +15,10 @@ class AppSettings:
     ARTIFACTS_DIR: str = "src/artifacts"
     DICT_VECTORIZER_PATH: str = "src/artifacts/dict_vectorizer.pkl"
     SIMPLE_MODEL_PATH: str = "src/artifacts/simple_model.pkl"
+    DISTANCE_LOOKUP_PATH: str = "src/artifacts/distance_lookup.json"
     BEST_MODEL_METADATA_PATH: str = "src/artifacts/best_model.json"
     BEST_MODEL_METADATA_PATH_RELATIVE: str = "artifacts/best_model.json"
+    DEFAULT_TRIP_DISTANCE: float = 1.7
     
     # Feature column names
     PICKUP_DATETIME_COL: str = "tpep_pickup_datetime"

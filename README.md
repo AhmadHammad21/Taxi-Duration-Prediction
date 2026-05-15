@@ -204,8 +204,12 @@ docker-compose up --build
 ```bash
 curl -X POST http://localhost:8000/api/v1/predict \
   -H "Content-Type: application/json" \
-  -d '{"PULocationID": "132", "DOLocationID": "161"}'
+        -d '{"PULocationID": "132", "DOLocationID": "161", "trip_distance": 17.3}'
 ```
+
+`trip_distance` is optional. When it is omitted, the API estimates distance from
+historical median trip distances by pickup/dropoff zone pair using
+`src/artifacts/distance_lookup.json`.
 
 ### 5. Generate a drift report
 ```bash

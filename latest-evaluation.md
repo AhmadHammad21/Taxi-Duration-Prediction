@@ -1,8 +1,8 @@
 # MLOps Project Evaluation - Taxi Duration Prediction
 
-**Date**: 2026-04-03
-**Branch Evaluated**: dev (post-monitoring merge)
-**Overall Rating**: **8.5/10** - Production-Ready MLOps Platform
+**Date**: 2026-05-15
+**Branch Evaluated**: improve-trip-distance-estimation
+**Overall Rating**: **8.6/10** - Production-Ready MLOps Platform with improved inference feature realism
 
 ---
 
@@ -17,7 +17,7 @@
 | **Monitoring** | 9/10 | Prometheus metrics, Grafana dashboards (auto-provisioned), 5 alert rules, Evidently drift detection |
 | **Code Quality** | 7/10 | Linting, security scanning, good structure, missing type checking |
 | **Documentation** | 8/10 | Excellent deployment docs, good README, missing model cards |
-| **Data Management** | 5/10 | Basic pipeline, no versioning (DVC), no quality frameworks |
+| **Data Management** | 6/10 | Basic pipeline plus historical distance lookup for inference; still no versioning (DVC) or formal quality framework |
 | **Infrastructure as Code** | 5/10 | Docker-based, no Terraform/CloudFormation |
 | **Model Governance** | 6/10 | MLflow registry, basic validation, no A/B testing |
 
@@ -51,10 +51,12 @@
 - Dual prediction strategies (MLflow-based vs simple pickle)
 - Environment-aware implementations (Lambda detection)
 - Pydantic schemas for data validation
+- Historical trip-distance estimator for inference instead of synthetic random distances
 - Modular configuration management
 
 ### 5. Comprehensive Testing
 - Unit tests for feature engineering and data loading (`tests/unit/`)
+- Focused unit tests for historical distance lookup fallback behavior
 - Integration tests for full pipeline (`tests/integration/`)
 - Performance tests with Locust framework (`tests/performance/`)
 - pytest with coverage reporting
@@ -74,6 +76,17 @@
 - Pydantic schemas for validation
 - Docker and Docker Compose for orchestration
 - Mangum for AWS Lambda compatibility
+
+---
+
+## Recent Improvement: Trip Distance Inference
+
+- The prediction API no longer depends on a synthetic hash/random trip-distance estimate.
+- `PredictionInput` now accepts an optional `trip_distance` field, allowing callers to pass a route-derived or externally calculated distance when available.
+- When `trip_distance` is omitted, the API estimates it from `src/artifacts/distance_lookup.json`.
+- The lookup is generated from the January 2024 training parquet data by filtering valid trips (`trip_distance > 0` and `<= 100`) and calculating the median `trip_distance` for each `PULocationID_DOLocationID` pair.
+- Current lookup artifact: 2,904,194 valid trips, 25,496 pickup/dropoff pairs, plus a global median fallback for unseen pairs.
+- New unit tests cover direct pair lookup, reverse-pair fallback, and global-median fallback.
 
 ---
 
@@ -111,7 +124,8 @@
 
 ### 6. No Feature Store
 - Features computed ad-hoc during inference
-- Risk: Train/serve skew
+- `trip_distance` is now caller-provided or estimated from historical training data, reducing the previous synthetic-feature risk
+- Remaining risk: no centralized feature store or online/offline feature contract
 - No feature sharing across models
 - No feature versioning or consistency guarantees
 
@@ -131,6 +145,7 @@
 - Debug prints in production code (`predict.py:62`)
 - Some commented-out test code
 - Limited inline documentation for complex logic
+- ~~Synthetic random distance generation in production prediction path~~ RESOLVED with historical median distance lookup
 
 ---
 
@@ -982,13 +997,13 @@ Your **Taxi Duration Prediction** project demonstrates **strong MLOps engineerin
 - ✅ Structured logging
 
 **Areas for Improvement** (5-6/10):
-- ⚠️ Data versioning and quality
+- ⚠️ Data versioning and broader data quality framework
 - ⚠️ Infrastructure as Code
 - ⚠️ Model governance and documentation
 - ⚠️ Complete observability stack
 
 **Missing or Limited** (<5/10):
-- ❌ Feature store
+- ⚠️ Feature store (partial historical lookup only)
 - ❌ Advanced model monitoring
 - ❌ A/B testing infrastructure
 
@@ -1000,9 +1015,9 @@ To reach **elite MLOps maturity**, prioritize these enhancements:
 
 1. **Data Versioning (DVC)** - Enables reproducibility
 2. **Infrastructure as Code (Terraform)** - Production reliability
-3. **Grafana Dashboards** - Complete observability
-4. **Data Quality Framework** - Trust in data
-5. **Model Cards** - Governance and transparency
+3. **Data Quality Framework** - Trust in data
+4. **Model Cards** - Governance and transparency
+5. **Type Checking** - Better refactoring safety and runtime risk reduction
 
 **Time Investment**: 2-3 weeks for high-priority items
 
@@ -1025,16 +1040,16 @@ To reach **elite MLOps maturity**, prioritize these enhancements:
 | Monitoring | ✅ Complete | Required | None — Prometheus, Grafana, alerts, Evidently |
 | Data Versioning | ❌ Missing | Required | Critical gap |
 | IaC | ⚠️ Partial | Recommended | Moderate gap |
-| Feature Store | ❌ Missing | Recommended | Low priority |
+| Feature Store | ⚠️ Partial | Recommended | Low priority — historical distance lookup improves one inference feature, but no full feature store |
 | Model Cards | ❌ Missing | Recommended | Moderate gap |
 
 ---
 
 ### Final Verdict
 
-**Rating: 8.5/10** - This project is a **complete MLOps platform** demonstrating the full ML lifecycle.
+**Rating: 8.6/10** - This project is a **complete MLOps platform** demonstrating the full ML lifecycle.
 
-**Strengths**: Deployment automation, experiment tracking, clean architecture, complete observability stack (Prometheus + Grafana + Evidently)
+**Strengths**: Deployment automation, experiment tracking, clean architecture, more realistic inference feature handling, complete observability stack (Prometheus + Grafana + Evidently)
 **Remaining Opportunities**: Data versioning (DVC), Infrastructure as Code (Terraform), A/B testing
 
 **Critical Path to 9.5/10**:
@@ -1044,4 +1059,4 @@ To reach **elite MLOps maturity**, prioritize these enhancements:
 
 ---
 
-*Evaluation last updated 2026-04-03 — `dev` branch (post-monitoring merge)*
+*Evaluation last updated 2026-05-15 — `improve-trip-distance-estimation` branch*

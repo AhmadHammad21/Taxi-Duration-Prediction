@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 # from config.config import config
 # from config.settings import settings
 from .features.feature_pipeline import FeatureEngineer
+from .inference.distance_estimator import DistanceEstimator
 from .inference.simple_predict import SimpleModelPredictor
 from .utils.logging_config import setup_logging
 from mangum import Mangum
@@ -14,6 +15,7 @@ from mangum import Mangum
 async def lifespan(app: FastAPI):
     setup_logging()
     app.state.feature_engineer = FeatureEngineer()
+    app.state.distance_estimator = DistanceEstimator()
     app.state.model_predictor = SimpleModelPredictor(
         feature_engineer=app.state.feature_engineer
     )
