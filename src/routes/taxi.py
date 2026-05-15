@@ -1,8 +1,8 @@
 import time
-import random
 import pandas as pd
 from fastapi import APIRouter, Request, status
 from fastapi.responses import JSONResponse
+from ..inference.distance_estimator import DistanceEstimator
 from ..schemas.taxi_schema import DistanceInput, PredictionInput
 from ..metrics import REQUEST_COUNT, REQUEST_LATENCY, PREDICTION_VALUE, PREDICTION_ERRORS_TOTAL
 from ..monitoring.prediction_logger import log_prediction
@@ -11,11 +11,12 @@ from loguru import logger
 taxi_router = APIRouter(prefix="/api/v1", tags=["api_v1"])
 
 
-def calculate_fake_distance(pu_id: str, do_id: str) -> float:
-    """Simulates a fictional distance between pickup and dropoff locations."""
-    seed = hash(f"{pu_id}-{do_id}") % 1000
-    random.seed(seed)
-    return round(random.uniform(1.0, 30.0), 2)
+def get_distance_estimator(request: Request) -> DistanceEstimator:
+    distance_estimator = getattr(request.app.state, "distance_estimator", None)
+    if distance_estimator is None:
+        distance_estimator = DistanceEstimator()
+        request.app.state.distance_estimator = distance_estimator
+    return distance_estimator
 
 
 @taxi_router.post("/predict")
@@ -26,8 +27,11 @@ async def predict(request: Request, input_data: PredictionInput):
 
     pu_location_id = input_data.PULocationID
     du_location_id = input_data.DOLocationID
-
-    trip_distance = calculate_fake_distance(pu_location_id, du_location_id)
+    trip_distance = input_data.trip_distance
+    if trip_distance is None:
+        trip_distance = get_distance_estimator(request).estimate(
+            pu_location_id, du_location_id
+        )
 
     try:
         new_data = {
@@ -62,13 +66,13 @@ async def predict(request: Request, input_data: PredictionInput):
 
 
 @taxi_router.post("/measure_distance")
-async def measure_distance(input_data: DistanceInput):
-    """Measure fictional distance between locations."""
+async def measure_distance(request: Request, input_data: DistanceInput):
+    """Estimate historical distance between locations."""
     endpoint = "/measure_distance"
     start = time.perf_counter()
 
     try:
-        distance = calculate_fake_distance(
+        distance = get_distance_estimator(request).estimate(
             input_data.PULocationID, input_data.DOLocationID
         )
 

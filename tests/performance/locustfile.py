@@ -7,7 +7,7 @@ class TaxiPredictionUser(HttpUser):
     @task(7)
     def predict_trip(self):
         payload = {
-            "PULocationID": "x",
-            "DOLocationID": "y",
+            "PULocationID": "132",
+            "DOLocationID": "161",
         }
         self.client.post("/api/v1/predict", json=payload)
